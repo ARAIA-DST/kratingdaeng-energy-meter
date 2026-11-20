@@ -27,17 +27,21 @@ class KratingdaengGame {
     this.overchargeTime = 0;   // detik dalam overcharge (>=100%)
 
     // Ketupat Splitting Mechanics & RNG Winning Ratios
-    // 10% Tier 1 (Terbelah 100%)
-    // 30% Tier 2 (Terbelah 70%)
-    // 60% Tier 3 (Terbelah 30%)
+    // 10% Tier 1 (Terbelah 100%) - Ketupat sangat mudah dibelah
+    // 30% Tier 2 (Terbelah 70%)  - Ketupat sedang kerasnya
+    // 60% Tier 3 (Terbelah 30%)  - Ketupat sangat keras, sulit dibelah
     this.splitPercent = 0;
     this.roundTargetTier = 3;
-    this.targetCeiling = 30;
-    this.hardCap = 50;
+    // ketupatHardness: semakin tinggi = semakin keras = susah naik
+    // Tier 1 hardness rendah -> progress cepat naik
+    // Tier 2 hardness sedang -> progress naik sampai ~70
+    // Tier 3 hardness tinggi -> progress berhenti di ~30
+    this.ketupatHardness = 1.0;
+    // softCap: titik di mana resistensi mulai terasa kuat
+    this.softCap = 30;
+    // absoluteCap: batas fisik ketupat ini bisa terbelah
+    this.absoluteCap = 38;
     this.roundTierTitle = 'Tier 3 (30%)';
-    this.hasTriggered30 = false;
-    this.hasTriggered70 = false;
-    this.hasTriggered100 = false;
 
     // Statistik Tap & RPM
     this.totalTaps = 0;
@@ -112,9 +116,6 @@ class KratingdaengGame {
       ketupatLeft: document.getElementById('ketupat-half-left'),
       ketupatRight: document.getElementById('ketupat-half-right'),
       ketupatCore: document.getElementById('ketupat-inner-core'),
-      marker30: document.querySelector('.milestone-marker.m-30'),
-      marker70: document.querySelector('.milestone-marker.m-70'),
-      marker100: document.querySelector('.milestone-marker.m-100'),
       sweetSpotIndicator: document.getElementById('sweet-spot-indicator'),
       sweetSpotZone: document.getElementById('sweet-spot-zone'),
       overchargeBanner: document.getElementById('overcharge-banner'),
@@ -351,37 +352,51 @@ class KratingdaengGame {
   }
 
   rollRoundTier() {
-    // 1. 10% Tier 1 terbelah 100%
-    // 2. 30% Tier 2 terbelah 70%
-    // 3. 60% Tier 3 terbelah 30%
+    // 1. 10% Tier 1 terbelah 100% - ketupat SANGAT lunak (hardness rendah)
+    // 2. 30% Tier 2 terbelah 70%  - ketupat SEDANG keras
+    // 3. 60% Tier 3 terbelah 30%  - ketupat SANGAT keras (hardness tinggi)
+    // Pemain tidak tahu tier-nya - mereka hanya merasa ketupat ini "mudah" atau "keras"
     const rand = Math.random() * 100;
     if (rand < 10) {
       this.roundTargetTier = 1;
-      this.maxPossibleSplit = 100;
-      this.roundTierTitle = 'Tier 1: Terbelah 100%';
+      // Ketupat lunak: resistensi mulai di 90%, bisa tembus 100%
+      this.ketupatHardness = 0.18;   // rendah = naik cepat
+      this.softCap = 90;
+      this.absoluteCap = 103;        // bisa capai 100%
+      this.roundTierTitle = 'Tier 1 (100%)';
     } else if (rand < 40) { // 10% + 30% = 40%
       this.roundTargetTier = 2;
-      this.maxPossibleSplit = 70;
-      this.roundTierTitle = 'Tier 2: Terbelah 70%';
+      // Ketupat sedang: resistensi mulai di 60%, bisa tembus 70-78%
+      this.ketupatHardness = 0.52;
+      this.softCap = 60;
+      this.absoluteCap = 80;
+      this.roundTierTitle = 'Tier 2 (70%)';
     } else { // 60% sisa
       this.roundTargetTier = 3;
-      this.maxPossibleSplit = 30;
-      this.roundTierTitle = 'Tier 3: Terbelah 30%';
+      // Ketupat keras: resistensi mulai di 22%, bisa tembus 30-38%
+      this.ketupatHardness = 1.0;
+      this.softCap = 22;
+      this.absoluteCap = 40;
+      this.roundTierTitle = 'Tier 3 (30%)';
     }
 
     this.splitPercent = 0;
     this.energy = 0;
-    this.hasTriggered30 = false;
-    this.hasTriggered70 = false;
-    this.hasTriggered100 = false;
 
-    if (this.dom.marker30) this.dom.marker30.classList.remove('achieved');
-    if (this.dom.marker70) this.dom.marker70.classList.remove('achieved');
-    if (this.dom.marker100) this.dom.marker100.classList.remove('achieved');
+    // Bersihkan marker jika ada (untuk keamanan)
+    const m30 = document.querySelector('.milestone-marker.m-30');
+    const m70 = document.querySelector('.milestone-marker.m-70');
+    const m100 = document.querySelector('.milestone-marker.m-100');
+    if (m30) m30.classList.remove('achieved');
+    if (m70) m70.classList.remove('achieved');
+    if (m100) m100.classList.remove('achieved');
   }
 
   /**
    * Main Physics & Animation Loop (60 FPS)
+   * Progress TIDAK ada hard cap - dikendalikan oleh resistensi fisika ketupat.
+   * Ketupat keras (Tier 3) → resistensi besar → susah naik → alami berhenti di ~30%
+   * Ketupat lunak (Tier 1) → resistensi kecil → mudah naik → bisa tembus 100%
    */
   gameLoop(currentTime) {
     if (this.state !== 'PLAYING') return;
@@ -389,25 +404,29 @@ class KratingdaengGame {
     const dt = (currentTime - this.lastLoopTime) / 1000;
     this.lastLoopTime = currentTime;
 
-    // 1. Retensi Belahan: Belahan tetap bertahan di pos checkpoint (30%, 70%, 100%)
-    let minFloor = 0;
-    if (this.splitPercent >= 100) minFloor = 100;
-    else if (this.splitPercent >= 70) minFloor = 70;
-    else if (this.splitPercent >= 30) minFloor = 30;
-
-    if (this.splitPercent > minFloor) {
-      this.splitPercent = Math.max(minFloor, this.splitPercent - (2.5 * dt));
+    // 1. Idle Decay: belahan merapat kembali jika tidak ditap
+    // Laju decay tergantung seberapa jauh di atas softCap
+    const now = Date.now();
+    const idleMs = now - this.lastTapTime;
+    if (idleMs > 400) {
+      // Di bawah softCap: decay lambat (ketupat masih terbuka)
+      // Di atas softCap: decay lebih cepat (ketupat ingin kembali menutup)
+      const aboveSoftCap = Math.max(0, this.splitPercent - this.softCap);
+      const decayRate = 1.5 + (aboveSoftCap * this.ketupatHardness * 0.08);
+      this.splitPercent = Math.max(0, this.splitPercent - (decayRate * dt));
     }
+
+    // 2. Hard physical floor: tidak bisa negatif
+    this.splitPercent = Math.max(0, Math.min(this.absoluteCap, this.splitPercent));
     this.energy = this.splitPercent;
 
-    // 2. Combo Streak Decay jika berhenti tap lebih dari 0.65 detik
-    const now = Date.now();
+    // 3. Combo Streak Decay
     if (now - this.lastTapTime > 650 && this.comboStreak > 0) {
       this.comboStreak = Math.max(0, this.comboStreak - Math.ceil(dt * 15));
       this.calculateMultiplier();
     }
 
-    // 3. Sweet Spot Oscillator (Garis Target Timing)
+    // 4. Sweet Spot Oscillator
     this.sweetSpotPosition += this.sweetSpotSpeed * this.sweetSpotDirection * dt;
     if (this.sweetSpotPosition >= 1.0) {
       this.sweetSpotPosition = 1.0;
@@ -416,28 +435,26 @@ class KratingdaengGame {
       this.sweetSpotPosition = 0;
       this.sweetSpotDirection = 1;
     }
-
-    // Sweet Spot Zone berada di 0.70 - 0.85 (70%-85%)
     this.sweetSpotActive = (this.sweetSpotPosition >= 0.68 && this.sweetSpotPosition <= 0.86);
 
-    // 4. Overcharge Banner Status
-    if (this.splitPercent >= 100) {
-      this.dom.overchargeBanner.textContent = 'TIER 1 TERCAPAI: KETUPAT TERBELAH 100%!';
+    // 5. Dynamic Banner — berdasarkan posisi progress, bukan tier
+    if (this.splitPercent >= 95) {
+      this.dom.overchargeBanner.textContent = 'TERBELAH SEMPURNA! LUAR BIASA!';
       this.dom.overchargeBanner.classList.remove('hidden');
-    } else if (this.splitPercent >= 70) {
-      this.dom.overchargeBanner.textContent = 'TIER 2 TERCAPAI: KETUPAT TERBELAH 70%!';
+    } else if (this.splitPercent >= 65) {
+      this.dom.overchargeBanner.textContent = 'BELAHAN MENGANGA LEBAR! TERUS KETUK!';
       this.dom.overchargeBanner.classList.remove('hidden');
-    } else if (this.splitPercent >= 30) {
-      this.dom.overchargeBanner.textContent = 'TIER 3 TERCAPAI: KETUPAT TERBELAH 30%!';
+    } else if (this.splitPercent >= 28) {
+      this.dom.overchargeBanner.textContent = 'KETUPAT MULAI TERBELAH! JANGAN BERHENTI!';
       this.dom.overchargeBanner.classList.remove('hidden');
     } else {
       this.dom.overchargeBanner.classList.add('hidden');
     }
 
-    // 5. Update Floating Booster Posisi (jika aktif)
+    // 6. Update Floating Booster
     this.updateBooster(dt);
 
-    // 6. Update Semua Visual Meter
+    // 7. Update Visual
     this.updateVisualMeters();
 
     this.loopRaf = requestAnimationFrame((t) => this.gameLoop(t));
@@ -445,46 +462,65 @@ class KratingdaengGame {
 
   /**
    * Pemain menekan tombol Tap / Spacebar (Ketuk Ketupat)
+   * Fisika Resistensi: gain per tap dikurangi secara eksponensial
+   * semakin mendekati absoluteCap ketupat ini.
    */
   triggerEnergyTap(clientX, clientY) {
     const now = Date.now();
     this.lastTapTime = now;
     this.totalTaps++;
 
-    // Hitung Realtime Taps/detik (RPM)
+    // Hitung Realtime Taps/detik
     this.tapTimestamps.push(now);
     const oneSecAgo = now - 1000;
     this.tapTimestamps = this.tapTimestamps.filter(t => t > oneSecAgo);
     const currentRpm = this.tapTimestamps.length;
-    if (currentRpm > this.peakRpm) {
-      this.peakRpm = currentRpm;
-    }
+    if (currentRpm > this.peakRpm) this.peakRpm = currentRpm;
 
-    // Cek apakah mengenai Sweet Spot (Bull's Eye)
+    // Cek Sweet Spot
     const isCrit = this.sweetSpotActive;
-    let splitGain = isCrit ? 2.6 : 1.3;
+    const baseGain = isCrit ? 2.8 : 1.4;
     let points = isCrit ? 150 : 50;
 
-    // Update Combo Streak
+    // ── FISIKA RESISTENSI KETUPAT ──
+    // Di bawah softCap: gain penuh
+    // Di antara softCap → absoluteCap: gain menyusut eksponensial (ketupat melawan)
+    // Di absoluteCap: hampir tidak bergerak (fisik tidak bisa dibelah lebih)
+    let effectiveGain;
+    if (this.splitPercent < this.softCap) {
+      // Fase bebas: ketupat belum terasa melawan
+      effectiveGain = baseGain;
+    } else {
+      // Fase resistensi: semakin dekat absoluteCap, semakin kecil gain
+      const resistanceRange = this.absoluteCap - this.softCap;
+      const progress = Math.min(1, (this.splitPercent - this.softCap) / resistanceRange);
+      // Fungsi eksponensial: gain * (1 - progress)^(2 * hardness)
+      const resistanceFactor = Math.pow(1 - progress, 2 * this.ketupatHardness + 0.5);
+      effectiveGain = baseGain * resistanceFactor;
+      // Minimal micro-bounce agar tidak terasa mati total
+      effectiveGain = Math.max(effectiveGain, 0.05);
+    }
+
+    // Update Combo
     this.comboStreak++;
     this.calculateMultiplier();
 
-    // Akumulasi Poin
+    // Poin
     const earnedScore = Math.round(points * this.multiplier);
     this.score += earnedScore;
 
-    // Tambah Progres Belahan Ketupat (Dibatasi oleh target tier putaran ini)
-    this.splitPercent = Math.min(this.maxPossibleSplit, this.splitPercent + splitGain);
+    // Tambah progress (tanpa hard clamp — dibatasi hanya oleh absoluteCap)
+    this.splitPercent = Math.min(this.absoluteCap, this.splitPercent + effectiveGain);
     this.energy = this.splitPercent;
 
-    // Efek Getaran Fisik Ketupat (Recoil)
+    // Efek Getaran Fisik Ketupat
     if (this.dom.ketupatStage) {
       this.dom.ketupatStage.classList.remove('hit-recoil');
       void this.dom.ketupatStage.offsetWidth;
       this.dom.ketupatStage.classList.add('hit-recoil');
     }
 
-    // Audio SFX & Partikel
+    // Audio & Partikel
     if (isCrit) {
       window.soundSystem.playSweetSpot();
       this.particles.createSparks(clientX, clientY, 20, true);
@@ -495,27 +531,6 @@ class KratingdaengGame {
       this.particles.createSparks(clientX, clientY, 10, false);
       this.particles.addFloatingText(`+${earnedScore}`, clientX, clientY - 20, '#ffffff', false);
       this.triggerScreenShake(3);
-    }
-
-    // Cek Pencapaian Milestone Belahan
-    if (this.splitPercent >= 30 && !this.hasTriggered30) {
-      this.hasTriggered30 = true;
-      if (this.dom.marker30) this.dom.marker30.classList.add('achieved');
-      this.particles.addFloatingText('TIER 3 (30%) TERBELAH!', clientX, clientY - 50, '#8bc34a', true);
-      window.soundSystem.playSweetSpot();
-    }
-    if (this.splitPercent >= 70 && !this.hasTriggered70) {
-      this.hasTriggered70 = true;
-      if (this.dom.marker70) this.dom.marker70.classList.add('achieved');
-      this.particles.addFloatingText('TIER 2 (70%) TERBELAH!', clientX, clientY - 50, '#00e5ff', true);
-      window.soundSystem.playSweetSpot();
-    }
-    if (this.splitPercent >= 100 && !this.hasTriggered100) {
-      this.hasTriggered100 = true;
-      if (this.dom.marker100) this.dom.marker100.classList.add('achieved');
-      window.soundSystem.playOvercharge();
-      this.particles.createOverchargeExplosion();
-      this.particles.addFloatingText('TIER 1 (100%) TERBELAH SEMPURNA!', window.innerWidth / 2, window.innerHeight / 2 - 50, '#ffd700', true);
     }
 
     // Tombol Animation Feedback
@@ -623,17 +638,23 @@ class KratingdaengGame {
       this.dom.ketupatProgressFill.style.width = `${displaySplit}%`;
     }
 
-    // 2. Status Label Teks
+    // 2. Status Label Teks — berdasarkan posisi progress, bukan tier
     if (this.dom.ketupatSplitStatus) {
-      if (displaySplit >= 100) {
-        this.dom.ketupatSplitStatus.textContent = 'TERBELAH SEMPURNA (100%)';
+      if (displaySplit >= 95) {
+        this.dom.ketupatSplitStatus.textContent = 'TERBELAH SEMPURNA';
         this.dom.ketupatSplitStatus.style.color = '#ffd700';
-      } else if (displaySplit >= 70) {
-        this.dom.ketupatSplitStatus.textContent = 'TERBELAH LEBAR (70%)';
+      } else if (displaySplit >= 65) {
+        this.dom.ketupatSplitStatus.textContent = 'BELAHAN MENGANGA LEBAR';
         this.dom.ketupatSplitStatus.style.color = '#00e5ff';
-      } else if (displaySplit >= 30) {
-        this.dom.ketupatSplitStatus.textContent = 'TERBELAH (30%)';
+      } else if (displaySplit >= 40) {
+        this.dom.ketupatSplitStatus.textContent = 'TERBELAH SEDANG';
         this.dom.ketupatSplitStatus.style.color = '#8bc34a';
+      } else if (displaySplit >= 20) {
+        this.dom.ketupatSplitStatus.textContent = 'MULAI RETAK';
+        this.dom.ketupatSplitStatus.style.color = '#ffa726';
+      } else if (displaySplit >= 5) {
+        this.dom.ketupatSplitStatus.textContent = 'HAMPIR RETAK';
+        this.dom.ketupatSplitStatus.style.color = '#ef9a9a';
       } else {
         this.dom.ketupatSplitStatus.textContent = 'UTUH';
         this.dom.ketupatSplitStatus.style.color = '#cbd5e1';
@@ -735,29 +756,29 @@ class KratingdaengGame {
 
   determineTier() {
     const split = Math.round(this.splitPercent);
-    if (split >= 100) {
+    if (split >= 95) {
       return {
         tier: 'Tier 1: Terbelah 100%',
         badgeClass: 'tier-1',
-        desc: 'Luar Biasa! Ketupat Terbelah Sempurna 100%! Pemenang Hadiah Utama!'
+        desc: `Luar Biasa! Ketupat Terbelah Sempurna ${split}%! Pemenang Hadiah Utama!`
       };
-    } else if (split >= 70) {
+    } else if (split >= 65) {
       return {
         tier: 'Tier 2: Terbelah 70%',
         badgeClass: 'tier-2',
-        desc: 'Hebat! Ketupat Berhasil Terbelah 70%! Pukulan Anda Sangat Bertenaga!'
+        desc: `Hebat! Ketupat Berhasil Terbelah ${split}%! Pukulan Anda Sangat Bertenaga!`
       };
-    } else if (split >= 30) {
+    } else if (split >= 25) {
       return {
         tier: 'Tier 3: Terbelah 30%',
         badgeClass: 'tier-3',
-        desc: 'Bagus! Ketupat Berhasil Terbelah 30%! Stamina Pejuang Terbukti!'
+        desc: `Bagus! Ketupat Terbelah ${split}%! Stamina Pejuang Terbukti!`
       };
     }
     return {
       tier: 'Stamina Pemula',
       badgeClass: 'tier-starter',
-      desc: 'Ketukan belum cukup cepat untuk membelah ketupat. Ayo coba lagi!'
+      desc: `Ketupat baru retak ${split}%. Ketuk lebih cepat — ayo coba lagi!`
     };
   }
 

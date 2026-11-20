@@ -29,7 +29,7 @@ class ApiService {
   }
 
   hasValidUrl() {
-    return this.scriptUrl && this.scriptUrl.startsWith('https://script.google.com/macros/s/AKfycbwuKhWop7t4ydtYGsFgw0vTYEAQRIcQRsBUHT9B_xXwpFMOGu9e0Kixi3auoZaQjGow/exec');
+    return Boolean(this.scriptUrl && this.scriptUrl.startsWith('https://script.google.com/macros/s/AKfycbwuKhWop7t4ydtYGsFgw0vTYEAQRIcQRsBUHT9B_xXwpFMOGu9e0Kixi3auoZaQjGow/exec'));
   }
 
   /**
@@ -145,13 +145,13 @@ class ApiService {
       if (raw) return JSON.parse(raw);
     } catch (e) { }
 
-    // Default Highscore awal bertema Kratingdaeng
+    // Default Highscore awal bertema Ketuk Ketupat Kratingdaeng
     return [
-      { name: 'Banteng Merah Sakti', score: 14200, tier: '⚡ BULL OVERCHARGE GOD ⚡', peakRpm: 15.2 },
-      { name: 'Kratingdaeng Master', score: 11800, tier: '🔥 Sang Juara Kratingdaeng 🔥', peakRpm: 12.8 },
-      { name: 'Pejuang Lembur 99', score: 9400, tier: '💪 Pejuang Stamina Sakti 💪', peakRpm: 10.4 },
-      { name: 'Red Bull Energy 07', score: 7600, tier: '⚡ Kratingdaeng Power ⚡', peakRpm: 9.1 },
-      { name: 'Banteng Cepat', score: 5300, tier: 'Stamina Aktif', peakRpm: 7.5 }
+      { name: 'Sultan Ketupat Emas', score: 14800, tier: 'Tier 1: Terbelah 100%', peakRpm: 15.6 },
+      { name: 'Kratingdaeng Master', score: 12200, tier: 'Tier 2: Terbelah 70%', peakRpm: 13.1 },
+      { name: 'Pendekar Lebaran 99', score: 9600, tier: 'Tier 2: Terbelah 70%', peakRpm: 10.8 },
+      { name: 'Pejuang Stamina 07', score: 7800, tier: 'Tier 3: Terbelah 30%', peakRpm: 9.2 },
+      { name: 'Ketupat Cepat', score: 5400, tier: 'Tier 3: Terbelah 30%', peakRpm: 7.5 }
     ];
   }
 

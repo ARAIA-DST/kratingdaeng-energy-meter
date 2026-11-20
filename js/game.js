@@ -26,6 +26,18 @@ class KratingdaengGame {
     this.maxEnergyReached = 0;
     this.overchargeTime = 0;   // detik dalam overcharge (>=100%)
 
+    // Ketupat Splitting Mechanics & RNG Winning Ratios
+    // 10% Tier 1 (Terbelah 100%)
+    // 30% Tier 2 (Terbelah 70%)
+    // 60% Tier 3 (Terbelah 30%)
+    this.splitPercent = 0;
+    this.roundTargetTier = 3;
+    this.maxPossibleSplit = 30;
+    this.roundTierTitle = 'Tier 3: Terbelah 30%';
+    this.hasTriggered30 = false;
+    this.hasTriggered70 = false;
+    this.hasTriggered100 = false;
+
     // Statistik Tap & RPM
     this.totalTaps = 0;
     this.tapTimestamps = [];
@@ -44,7 +56,7 @@ class KratingdaengGame {
       y: 50,
       vx: 2,
       vy: 1.5,
-      type: 'can', // 'can' atau 'lightning'
+      type: 'can',
       timer: null
     };
 
@@ -91,11 +103,17 @@ class KratingdaengGame {
       multiplierBadge: document.getElementById('hud-multiplier-badge'),
       rpmText: document.getElementById('hud-rpm-text'),
       
-      // Energy Meter Elements
+      // Ketupat Arena Elements
       energyPercentText: document.getElementById('energy-percent-text'),
-      gaugeNeedle: document.getElementById('gauge-needle'),
-      bottleLiquid: document.getElementById('bottle-liquid-fill'),
-      bottleAura: document.getElementById('bottle-aura'),
+      ketupatSplitStatus: document.getElementById('ketupat-split-status'),
+      ketupatProgressFill: document.getElementById('ketupat-progress-fill'),
+      ketupatStage: document.getElementById('ketupat-stage'),
+      ketupatLeft: document.getElementById('ketupat-half-left'),
+      ketupatRight: document.getElementById('ketupat-half-right'),
+      ketupatCore: document.getElementById('ketupat-inner-core'),
+      marker30: document.querySelector('.milestone-marker.m-30'),
+      marker70: document.querySelector('.milestone-marker.m-70'),
+      marker100: document.querySelector('.milestone-marker.m-100'),
       sweetSpotIndicator: document.getElementById('sweet-spot-indicator'),
       sweetSpotZone: document.getElementById('sweet-spot-zone'),
       overchargeBanner: document.getElementById('overcharge-banner'),
@@ -107,8 +125,10 @@ class KratingdaengGame {
       canvas: document.getElementById('fx-canvas'),
 
       // Result Displays
+      finalSplit: document.getElementById('res-final-split'),
       finalScore: document.getElementById('res-final-score'),
       finalTier: document.getElementById('res-tier-badge'),
+      finalTierDesc: document.getElementById('res-tier-desc'),
       finalTaps: document.getElementById('res-total-taps'),
       finalRpm: document.getElementById('res-peak-rpm'),
       finalOvercharge: document.getElementById('res-overcharge-pct'),
@@ -146,8 +166,8 @@ class KratingdaengGame {
     this.dom.muteBtn.addEventListener('click', () => {
       const isMuted = window.soundSystem.toggleMute();
       this.dom.muteBtn.innerHTML = isMuted 
-        ? '<span class="icon">🔇</span> MUTE' 
-        : '<span class="icon">🔊</span> SUARA ON';
+        ? `<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg> <span>MUTE</span>`
+        : `<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg> <span>SUARA ON</span>`;
       this.dom.muteBtn.classList.toggle('active', !isMuted);
     });
 
@@ -156,11 +176,11 @@ class KratingdaengGame {
       if (window.soundSystem.bgmPlaying) {
         window.soundSystem.stopBGM();
         this.dom.bgmBtn.classList.remove('active');
-        this.dom.bgmBtn.innerHTML = '<span class="icon">🎵</span> MUSIK OFF';
+        this.dom.bgmBtn.innerHTML = `<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg> <span>MUSIK OFF</span>`;
       } else {
         window.soundSystem.startBGM();
         this.dom.bgmBtn.classList.add('active');
-        this.dom.bgmBtn.innerHTML = '<span class="icon">🎶</span> MUSIK ON';
+        this.dom.bgmBtn.innerHTML = `<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg> <span>MUSIK ON</span>`;
       }
     });
 
@@ -177,7 +197,7 @@ class KratingdaengGame {
 
     this.dom.saveSettingsBtn.addEventListener('click', () => {
       window.apiService.setScriptUrl(this.dom.scriptUrlInput.value);
-      this.dom.apiStatusMsg.textContent = '✅ URL tersimpan!';
+      this.dom.apiStatusMsg.textContent = 'URL berhasil disimpan.';
       this.dom.apiStatusMsg.style.color = '#10b981';
       setTimeout(() => {
         this.dom.settingsModal.classList.add('hidden');
@@ -295,20 +315,21 @@ class KratingdaengGame {
   startMatch() {
     this.state = 'PLAYING';
     this.timeLeft = this.duration;
-    this.energy = 20; // Mulai dari 20%
     this.score = 0;
     this.multiplier = 1.0;
     this.comboStreak = 0;
     this.totalTaps = 0;
     this.tapTimestamps = [];
     this.peakRpm = 0;
-    this.maxEnergyReached = 20;
     this.overchargeTime = 0;
+
+    // Roll Target Tier & Cap sesuai rasio kemenangan (10% Tier 1, 30% Tier 2, 60% Tier 3)
+    this.rollRoundTier();
 
     // Mulai background music jika belum jalan
     window.soundSystem.startBGM();
     this.dom.bgmBtn.classList.add('active');
-    this.dom.bgmBtn.innerHTML = '<span class="icon">🎶</span> MUSIK ON';
+    this.dom.bgmBtn.innerHTML = `<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg> <span>MUSIK ON</span>`;
 
     // Timer Interval Game (per detik)
     this.timerInterval = setInterval(() => {
@@ -328,6 +349,36 @@ class KratingdaengGame {
     this.loopRaf = requestAnimationFrame((t) => this.gameLoop(t));
   }
 
+  rollRoundTier() {
+    // 1. 10% Tier 1 terbelah 100%
+    // 2. 30% Tier 2 terbelah 70%
+    // 3. 60% Tier 3 terbelah 30%
+    const rand = Math.random() * 100;
+    if (rand < 10) {
+      this.roundTargetTier = 1;
+      this.maxPossibleSplit = 100;
+      this.roundTierTitle = 'Tier 1: Terbelah 100%';
+    } else if (rand < 40) { // 10% + 30% = 40%
+      this.roundTargetTier = 2;
+      this.maxPossibleSplit = 70;
+      this.roundTierTitle = 'Tier 2: Terbelah 70%';
+    } else { // 60% sisa
+      this.roundTargetTier = 3;
+      this.maxPossibleSplit = 30;
+      this.roundTierTitle = 'Tier 3: Terbelah 30%';
+    }
+
+    this.splitPercent = 0;
+    this.energy = 0;
+    this.hasTriggered30 = false;
+    this.hasTriggered70 = false;
+    this.hasTriggered100 = false;
+
+    if (this.dom.marker30) this.dom.marker30.classList.remove('achieved');
+    if (this.dom.marker70) this.dom.marker70.classList.remove('achieved');
+    if (this.dom.marker100) this.dom.marker100.classList.remove('achieved');
+  }
+
   /**
    * Main Physics & Animation Loop (60 FPS)
    */
@@ -337,10 +388,16 @@ class KratingdaengGame {
     const dt = (currentTime - this.lastLoopTime) / 1000;
     this.lastLoopTime = currentTime;
 
-    // 1. Natural Energy Decay: energi turun seiring waktu jika tidak ditap
-    // Decay lebih kencang saat energi berada di atas 80% (menantang!)
-    const decayRate = 8 + (this.energy * 0.22); // 8% - 41% per detik
-    this.energy = Math.max(0, this.energy - (decayRate * dt));
+    // 1. Retensi Belahan: Belahan tetap bertahan di pos checkpoint (30%, 70%, 100%)
+    let minFloor = 0;
+    if (this.splitPercent >= 100) minFloor = 100;
+    else if (this.splitPercent >= 70) minFloor = 70;
+    else if (this.splitPercent >= 30) minFloor = 30;
+
+    if (this.splitPercent > minFloor) {
+      this.splitPercent = Math.max(minFloor, this.splitPercent - (2.5 * dt));
+    }
+    this.energy = this.splitPercent;
 
     // 2. Combo Streak Decay jika berhenti tap lebih dari 0.65 detik
     const now = Date.now();
@@ -362,26 +419,18 @@ class KratingdaengGame {
     // Sweet Spot Zone berada di 0.70 - 0.85 (70%-85%)
     this.sweetSpotActive = (this.sweetSpotPosition >= 0.68 && this.sweetSpotPosition <= 0.86);
 
-    // 4. Overcharge Check
-    if (this.energy >= 100) {
-      this.overchargeTime += dt;
-      this.score += Math.round(75 * dt * this.multiplier); // Bonus pasif score saat overcharge
+    // 4. Overcharge Banner Status
+    if (this.splitPercent >= 100) {
+      this.dom.overchargeBanner.textContent = 'TIER 1 TERCAPAI: KETUPAT TERBELAH 100%!';
       this.dom.overchargeBanner.classList.remove('hidden');
-      this.dom.bottleAura.classList.add('overcharged');
-      
-      // Random micro sparks
-      if (Math.random() < 0.3) {
-        const rect = this.dom.bottleLiquid.getBoundingClientRect();
-        this.particles.createSparks(rect.left + rect.width * Math.random(), rect.top + rect.height * Math.random(), 3, true);
-      }
+    } else if (this.splitPercent >= 70) {
+      this.dom.overchargeBanner.textContent = 'TIER 2 TERCAPAI: KETUPAT TERBELAH 70%!';
+      this.dom.overchargeBanner.classList.remove('hidden');
+    } else if (this.splitPercent >= 30) {
+      this.dom.overchargeBanner.textContent = 'TIER 3 TERCAPAI: KETUPAT TERBELAH 30%!';
+      this.dom.overchargeBanner.classList.remove('hidden');
     } else {
       this.dom.overchargeBanner.classList.add('hidden');
-      this.dom.bottleAura.classList.remove('overcharged');
-    }
-
-    // Catat Max Energy
-    if (this.energy > this.maxEnergyReached) {
-      this.maxEnergyReached = Math.round(this.energy);
     }
 
     // 5. Update Floating Booster Posisi (jika aktif)
@@ -394,7 +443,7 @@ class KratingdaengGame {
   }
 
   /**
-   * Pemain menekan tombol Tap / Spacebar
+   * Pemain menekan tombol Tap / Spacebar (Ketuk Ketupat)
    */
   triggerEnergyTap(clientX, clientY) {
     const now = Date.now();
@@ -412,7 +461,7 @@ class KratingdaengGame {
 
     // Cek apakah mengenai Sweet Spot (Bull's Eye)
     const isCrit = this.sweetSpotActive;
-    let energyGain = isCrit ? 7.5 : 3.8;
+    let splitGain = isCrit ? 2.6 : 1.3;
     let points = isCrit ? 150 : 50;
 
     // Update Combo Streak
@@ -423,27 +472,49 @@ class KratingdaengGame {
     const earnedScore = Math.round(points * this.multiplier);
     this.score += earnedScore;
 
-    // Tambah Energi
-    this.energy = Math.min(150, this.energy + energyGain);
+    // Tambah Progres Belahan Ketupat (Dibatasi oleh target tier putaran ini)
+    this.splitPercent = Math.min(this.maxPossibleSplit, this.splitPercent + splitGain);
+    this.energy = this.splitPercent;
 
-    // Audio SFX
+    // Efek Getaran Fisik Ketupat (Recoil)
+    if (this.dom.ketupatStage) {
+      this.dom.ketupatStage.classList.remove('hit-recoil');
+      void this.dom.ketupatStage.offsetWidth;
+      this.dom.ketupatStage.classList.add('hit-recoil');
+    }
+
+    // Audio SFX & Partikel
     if (isCrit) {
       window.soundSystem.playSweetSpot();
       this.particles.createSparks(clientX, clientY, 20, true);
       this.particles.addFloatingText(`CRITICAL x${this.multiplier.toFixed(1)}!`, clientX, clientY - 30, '#ffd700', true);
       this.triggerScreenShake(8);
     } else {
-      window.soundSystem.playTap(this.energy);
+      window.soundSystem.playTap(this.splitPercent);
       this.particles.createSparks(clientX, clientY, 10, false);
       this.particles.addFloatingText(`+${earnedScore}`, clientX, clientY - 20, '#ffffff', false);
       this.triggerScreenShake(3);
     }
 
-    // Jika baru saja menembus 100% pertama kali
-    if (this.energy >= 100 && this.energy - energyGain < 100) {
+    // Cek Pencapaian Milestone Belahan
+    if (this.splitPercent >= 30 && !this.hasTriggered30) {
+      this.hasTriggered30 = true;
+      if (this.dom.marker30) this.dom.marker30.classList.add('achieved');
+      this.particles.addFloatingText('TIER 3 (30%) TERBELAH!', clientX, clientY - 50, '#8bc34a', true);
+      window.soundSystem.playSweetSpot();
+    }
+    if (this.splitPercent >= 70 && !this.hasTriggered70) {
+      this.hasTriggered70 = true;
+      if (this.dom.marker70) this.dom.marker70.classList.add('achieved');
+      this.particles.addFloatingText('TIER 2 (70%) TERBELAH!', clientX, clientY - 50, '#00e5ff', true);
+      window.soundSystem.playSweetSpot();
+    }
+    if (this.splitPercent >= 100 && !this.hasTriggered100) {
+      this.hasTriggered100 = true;
+      if (this.dom.marker100) this.dom.marker100.classList.add('achieved');
       window.soundSystem.playOvercharge();
       this.particles.createOverchargeExplosion();
-      this.particles.addFloatingText(`⚡ BULL OVERCHARGE! ⚡`, window.innerWidth / 2, window.innerHeight / 2 - 50, '#ff1744', true);
+      this.particles.addFloatingText('TIER 1 (100%) TERBELAH SEMPURNA!', window.innerWidth / 2, window.innerHeight / 2 - 50, '#ffd700', true);
     }
 
     // Tombol Animation Feedback
@@ -489,8 +560,8 @@ class KratingdaengGame {
 
     this.dom.floatingBooster.className = `floating-booster ${this.booster.type}`;
     this.dom.floatingBooster.innerHTML = this.booster.type === 'can' 
-      ? '🥫 <span class="booster-label">+500 ENERGI</span>' 
-      : '⚡ <span class="booster-label">MEGA BOOST</span>';
+      ? '<span class="booster-label">+500 ENERGI</span>' 
+      : '<span class="booster-label">MEGA BOOST</span>';
     this.dom.floatingBooster.style.display = 'flex';
 
     // Hilang otomatis dalam 3.2 detik jika tidak diklik
@@ -526,7 +597,7 @@ class KratingdaengGame {
 
     window.soundSystem.playPowerUp();
     this.particles.createSparks(clientX, clientY, 35, true);
-    this.particles.addFloatingText(`🥫 +${bonusScore} BONUS SURGE!`, clientX, clientY - 40, '#ffd700', true);
+    this.particles.addFloatingText(`+${bonusScore} BONUS SURGE!`, clientX, clientY - 40, '#ffd700', true);
 
     this.scheduleNextBooster();
   }
@@ -538,27 +609,64 @@ class KratingdaengGame {
   }
 
   /**
-   * Update Tampilan Visual (Speedometer Gauge, Kratingdaeng Bottle Liquid, HUD)
+   * Update Tampilan Visual (Ketupat Progress, Pemisahan Belahan Ketupat, Core Reveal, HUD)
    */
   updateVisualMeters() {
-    const displayEnergy = Math.round(this.energy);
-    this.dom.energyPercentText.textContent = `${displayEnergy}%`;
+    const displaySplit = Math.round(this.splitPercent);
+    if (this.dom.energyPercentText) {
+      this.dom.energyPercentText.textContent = `${displaySplit}%`;
+    }
 
-    // 1. Speedometer Needle Rotation: -90deg (0%) sampai +90deg (100%), hingga +120deg (150%)
-    const clampedEnergy = Math.min(150, Math.max(0, this.energy));
-    const needleDeg = -90 + (clampedEnergy / 100) * 180;
-    this.dom.gaugeNeedle.style.transform = `rotate(${needleDeg}deg)`;
+    // 1. Progress Bar Fill
+    if (this.dom.ketupatProgressFill) {
+      this.dom.ketupatProgressFill.style.width = `${displaySplit}%`;
+    }
 
-    // 2. Kratingdaeng Bottle Liquid Height: 0% sampai 100%
-    const liquidPercent = Math.min(100, clampedEnergy);
-    this.dom.bottleLiquid.style.height = `${liquidPercent}%`;
+    // 2. Status Label Teks
+    if (this.dom.ketupatSplitStatus) {
+      if (displaySplit >= 100) {
+        this.dom.ketupatSplitStatus.textContent = 'TERBELAH SEMPURNA (100%)';
+        this.dom.ketupatSplitStatus.style.color = '#ffd700';
+      } else if (displaySplit >= 70) {
+        this.dom.ketupatSplitStatus.textContent = 'TERBELAH LEBAR (70%)';
+        this.dom.ketupatSplitStatus.style.color = '#00e5ff';
+      } else if (displaySplit >= 30) {
+        this.dom.ketupatSplitStatus.textContent = 'TERBELAH (30%)';
+        this.dom.ketupatSplitStatus.style.color = '#8bc34a';
+      } else {
+        this.dom.ketupatSplitStatus.textContent = 'UTUH';
+        this.dom.ketupatSplitStatus.style.color = '#cbd5e1';
+      }
+    }
 
-    // 3. Sweet Spot Indicator
+    // 3. Pemisahan Fisik Kedua Belahan Ketupat (Transform Left & Right)
+    // 0% = 0px, 100% = 85px separasi & 16 derajat rotasi
+    const separation = (this.splitPercent / 100) * 85;
+    const rotation = (this.splitPercent / 100) * 16;
+    if (this.dom.ketupatLeft && this.dom.ketupatRight) {
+      this.dom.ketupatLeft.style.transform = `translateX(-${separation}px) rotate(-${rotation}deg)`;
+      this.dom.ketupatRight.style.transform = `translateX(${separation}px) rotate(${rotation}deg)`;
+    }
+
+    // 4. Inti Hadiah / Logo Kratingdaeng di dalam Ketupat
+    if (this.dom.ketupatCore) {
+      if (this.splitPercent >= 20) {
+        const scale = 0.6 + (this.splitPercent / 100) * 0.55;
+        const opacity = Math.min(1, (this.splitPercent - 15) / 45);
+        this.dom.ketupatCore.style.opacity = opacity;
+        this.dom.ketupatCore.style.transform = `translate(-50%, -50%) scale(${scale})`;
+      } else {
+        this.dom.ketupatCore.style.opacity = '0';
+        this.dom.ketupatCore.style.transform = 'translate(-50%, -50%) scale(0.6)';
+      }
+    }
+
+    // 5. Sweet Spot Indicator
     const indicatorPct = this.sweetSpotPosition * 100;
     this.dom.sweetSpotIndicator.style.left = `${indicatorPct}%`;
     this.dom.sweetSpotIndicator.classList.toggle('active', this.sweetSpotActive);
 
-    // 4. HUD Text
+    // 6. HUD Text
     this.dom.scoreText.textContent = this.score.toLocaleString('id-ID');
     this.dom.multiplierBadge.textContent = `${this.multiplier.toFixed(1)}x`;
     this.dom.multiplierBadge.className = `multiplier-badge mult-${this.multiplier.toFixed(1).replace('.', '-')}`;
@@ -597,15 +705,22 @@ class KratingdaengGame {
     window.soundSystem.stopBGM();
     window.soundSystem.playVictory();
 
-    // Hitung Gelar Stamina (Tier)
-    const tier = this.determineTier(this.score);
+    // Hitung Gelar Stamina & Hasil Belahan Ketupat
+    const tierInfo = this.determineTier();
 
     // Tampilkan Data di Layar Hasil
     this.dom.finalScore.textContent = this.score.toLocaleString('id-ID');
-    this.dom.finalTier.textContent = tier;
+    this.dom.finalTier.textContent = tierInfo.tier;
+    this.dom.finalTier.className = `tier-badge ${tierInfo.badgeClass}`;
+    if (this.dom.finalSplit) {
+      this.dom.finalSplit.textContent = `KETUPAT TERBELAH ${Math.round(this.splitPercent)}%`;
+    }
+    if (this.dom.finalTierDesc) {
+      this.dom.finalTierDesc.textContent = tierInfo.desc;
+    }
     this.dom.finalTaps.textContent = this.totalTaps;
     this.dom.finalRpm.textContent = `${this.peakRpm} taps/s`;
-    this.dom.finalOvercharge.textContent = `${this.maxEnergyReached}%`;
+    this.dom.finalOvercharge.textContent = `${Math.round(this.splitPercent)}%`;
 
     this.dom.gameScreen.classList.add('hidden');
     this.dom.gameOverScreen.classList.remove('hidden');
@@ -614,15 +729,35 @@ class KratingdaengGame {
     this.particles.createOverchargeExplosion();
 
     // Simpan ke Google Sheet & Google Drive
-    await this.syncScoreToBackend(tier);
+    await this.syncScoreToBackend(tierInfo.tier);
   }
 
-  determineTier(score) {
-    if (score >= 14000) return '⚡ BULL OVERCHARGE GOD ⚡';
-    if (score >= 10000) return '🔥 Sang Juara Kratingdaeng 🔥';
-    if (score >= 7000)  return '💪 Pejuang Stamina Tinggi 💪';
-    if (score >= 4000)  return '⚡ Kratingdaeng Active Booster ⚡';
-    return '🌱 Stamina Pemula (Ayo Minum Kratingdaeng!)';
+  determineTier() {
+    const split = Math.round(this.splitPercent);
+    if (split >= 100) {
+      return {
+        tier: 'Tier 1: Terbelah 100%',
+        badgeClass: 'tier-1',
+        desc: 'Luar Biasa! Ketupat Terbelah Sempurna 100%! Pemenang Hadiah Utama!'
+      };
+    } else if (split >= 70) {
+      return {
+        tier: 'Tier 2: Terbelah 70%',
+        badgeClass: 'tier-2',
+        desc: 'Hebat! Ketupat Berhasil Terbelah 70%! Pukulan Anda Sangat Bertenaga!'
+      };
+    } else if (split >= 30) {
+      return {
+        tier: 'Tier 3: Terbelah 30%',
+        badgeClass: 'tier-3',
+        desc: 'Bagus! Ketupat Berhasil Terbelah 30%! Stamina Pejuang Terbukti!'
+      };
+    }
+    return {
+      tier: 'Stamina Pemula',
+      badgeClass: 'tier-starter',
+      desc: 'Ketukan belum cukup cepat untuk membelah ketupat. Ayo coba lagi!'
+    };
   }
 
   async syncScoreToBackend(tier) {
@@ -638,7 +773,7 @@ class KratingdaengGame {
       tier: tier,
       peakRpm: this.peakRpm,
       duration: this.duration,
-      maxPercent: this.maxEnergyReached,
+      maxPercent: Math.round(this.splitPercent),
       device: window.innerWidth < 768 ? 'Mobile' : 'Desktop'
     };
 
@@ -647,7 +782,7 @@ class KratingdaengGame {
       
       this.dom.sheetSyncStatus.className = 'status-pill success';
       this.dom.sheetSyncStatus.innerHTML = `
-        ✅ ${result.message || 'Berhasil dicatat!'} <strong>(Peringkat #${result.rank || 1})</strong>
+        ${result.message || 'Berhasil dicatat!'} <strong>(Peringkat #${result.rank || 1})</strong>
       `;
 
       // Jika ada sertifikat Google Drive
@@ -678,11 +813,17 @@ class KratingdaengGame {
 
     let rowsHtml = '';
     scores.forEach((entry, idx) => {
-      const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`;
+      const rankBadge = idx === 0 
+        ? '<span class="rank-badge rank-1">1</span>' 
+        : idx === 1 
+        ? '<span class="rank-badge rank-2">2</span>' 
+        : idx === 2 
+        ? '<span class="rank-badge rank-3">3</span>' 
+        : `<span class="rank-badge">${idx + 1}</span>`;
       const isTop3 = idx < 3 ? 'top-rank' : '';
       rowsHtml += `
         <tr class="${isTop3}">
-          <td class="rank-col">${medal}</td>
+          <td class="rank-col">${rankBadge}</td>
           <td class="name-col"><strong>${this.escapeHtml(entry.name)}</strong></td>
           <td class="score-col">${(entry.score || 0).toLocaleString('id-ID')}</td>
           <td class="tier-col">${this.escapeHtml(entry.tier || '')}</td>
@@ -694,10 +835,11 @@ class KratingdaengGame {
   }
 
   shareScore() {
-    const text = `🐂⚡ Saya baru saja meraih skor ${this.score.toLocaleString('id-ID')} PTS dengan gelar "${this.determineTier(this.score)}" di Kratingdaeng Energy Meter Rush! Bisakah kamu mengalahkan staminaku?`;
+    const tierInfo = this.determineTier();
+    const text = `Saya baru saja bermain Ketuk Ketupat Rush Kratingdaeng dan berhasil membuat ketupat terbelah ${Math.round(this.splitPercent)}% (${tierInfo.tier}) dengan skor ${this.score.toLocaleString('id-ID')} PTS! Bisakah kamu membelah 100%?`;
     if (navigator.share) {
       navigator.share({
-        title: 'Kratingdaeng Energy Meter Rush',
+        title: 'Kratingdaeng Ketuk Ketupat Rush',
         text: text,
         url: window.location.href
       }).catch(() => {});

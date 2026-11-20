@@ -186,42 +186,20 @@ body {
   50% { transform: translateY(-5px) scale(1.02); }
 }
 
-.ratio-badge-info {
-  display: flex;
-  justify-content: center;
-  gap: 6px;
-  flex-wrap: wrap;
-  margin-top: 6px;
+.game-hint-pill {
+  background: rgba(255, 215, 0, 0.1);
+  border: 1px solid rgba(255, 215, 0, 0.35);
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #ffea75;
+  text-align: center;
+  margin-top: 4px;
   margin-bottom: 18px;
-  width: 100%;
-}
-
-.ratio-pill {
-  font-size: 11px;
-  font-weight: 800;
-  padding: 5px 10px;
-  border-radius: 12px;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-}
-
-.tier-1-pill {
-  background: rgba(255, 215, 0, 0.18);
-  border: 1px solid #ffd700;
-  color: #ffd700;
-  box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
-}
-
-.tier-2-pill {
-  background: rgba(0, 229, 255, 0.18);
-  border: 1px solid #00e5ff;
-  color: #00e5ff;
-}
-
-.tier-3-pill {
-  background: rgba(139, 195, 74, 0.18);
-  border: 1px solid #8bc34a;
-  color: #c5e1a5;
+  max-width: 460px;
+  line-height: 1.4;
+  box-shadow: 0 0 15px rgba(255, 215, 0, 0.15);
 }
 
 .main-title {
@@ -495,61 +473,22 @@ body {
 
 .ketupat-progress-track {
   position: relative;
-  height: 12px;
+  height: 14px;
   background: rgba(5, 11, 24, 0.85);
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  overflow: visible;
-  margin-bottom: 12px;
+  border-radius: 7px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  overflow: hidden;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.6);
+  margin-bottom: 4px;
 }
 
 .ketupat-progress-fill {
   height: 100%;
   width: 0%;
-  border-radius: 6px;
-  background: linear-gradient(90deg, #8bc34a 0%, #ffd700 70%, #ff1744 100%);
-  transition: width 0.08s ease-out;
-  box-shadow: 0 0 10px rgba(139, 195, 74, 0.6);
-}
-
-.milestone-marker {
-  position: absolute;
-  top: -4px;
-  transform: translateX(-50%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  pointer-events: none;
-}
-
-.milestone-marker.m-30 { left: 30%; }
-.milestone-marker.m-70 { left: 70%; }
-.milestone-marker.m-100 { left: 100%; }
-
-.marker-dot {
-  width: 8px;
-  height: 20px;
-  background: #ffffff;
-  border-radius: 4px;
-  border: 1px solid #000;
-  box-shadow: 0 0 6px rgba(255, 255, 255, 0.8);
-}
-
-.marker-label {
-  font-size: 9px;
-  font-weight: 800;
-  color: #94a3b8;
-  margin-top: 3px;
-  white-space: nowrap;
-}
-
-.milestone-marker.achieved .marker-dot {
-  background: #ffd700;
-  box-shadow: 0 0 10px #ffd700;
-}
-
-.milestone-marker.achieved .marker-label {
-  color: #ffd700;
+  border-radius: 7px;
+  background: linear-gradient(90deg, #76c043 0%, #8bc34a 30%, #ffd700 70%, #ff3344 95%, #ff1744 100%);
+  transition: width 0.05s ease-out;
+  box-shadow: 0 0 12px rgba(255, 215, 0, 0.6);
 }
 
 /* Ketupat Interactive Stage */

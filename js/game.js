@@ -32,8 +32,9 @@ class KratingdaengGame {
     // 60% Tier 3 (Terbelah 30%)
     this.splitPercent = 0;
     this.roundTargetTier = 3;
-    this.maxPossibleSplit = 30;
-    this.roundTierTitle = 'Tier 3: Terbelah 30%';
+    this.targetCeiling = 30;
+    this.hardCap = 50;
+    this.roundTierTitle = 'Tier 3 (30%)';
     this.hasTriggered30 = false;
     this.hasTriggered70 = false;
     this.hasTriggered100 = false;

@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Kratingdaeng Red Bull - Energy Meter Rush</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='48' fill='%23ffd700'/><path d='M30,50 L70,50' stroke='%23e60000' stroke-width='10'/></svg>">
+</head>
+<body>
+
+  <!-- Main Container -->
+  <div id="app-container">
+    <!-- Canvas Visual FX (Partikel, Sparks, Gelembung, Teks Melayang) -->
+    <canvas id="fx-canvas"></canvas>
+
+    <!-- Top Bar -->
+    <header class="top-bar">
+      <div class="brand-badge">
+        <svg class="brand-logo-small" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="46" fill="#ffd700" stroke="#e60000" stroke-width="4"/>
+          <!-- Bulls icon silhouette -->
+          <path d="M25,55 Q35,45 48,52 Q40,62 25,55 Z" fill="#e60000"/>
+          <path d="M75,55 Q65,45 52,52 Q60,62 75,55 Z" fill="#e60000"/>
+          <circle cx="50" cy="38" r="8" fill="#e60000"/>
+        </svg>
+        <span class="brand-title-small">KRATINGDAENG</span>
+      </div>
+
+      <div class="top-actions">
+        <button id="btn-toggle-bgm" class="btn-icon">
+          <span class="icon">🎵</span> MUSIK OFF
+        </button>
+        <button id="btn-toggle-mute" class="btn-icon active">
+          <span class="icon">🔊</span> SUARA ON
+        </button>
+        <button id="btn-open-settings" class="btn-icon" title="Hubungkan Google Sheet">
+          <span class="icon">⚙️</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- ==================== 1. START SCREEN ==================== -->
+    <main id="start-screen" class="screen">
+      <!-- Emblem Kratingdaeng: Sun & Charging Bulls -->
+      <div class="hero-emblem">
+        <div class="hero-sun"></div>
+        <svg class="bulls-svg-wrap" viewBox="0 0 300 160">
+          <!-- Bull Left (Charging Right) -->
+          <g fill="#e60000" stroke="#ffea75" stroke-width="2">
+            <!-- Horn -->
+            <path d="M 60,65 Q 85,30 115,45 Q 98,58 82,72 Z" fill="#ffd700"/>
+            <!-- Body -->
+            <path d="M 30,110 Q 50,70 95,75 Q 125,80 140,105 Q 120,125 75,120 Q 40,125 30,110 Z"/>
+            <!-- Head & Snout -->
+            <path d="M 95,75 Q 125,75 142,95 Q 130,110 110,105 Z"/>
+          </g>
+          <!-- Bull Right (Charging Left) -->
+          <g fill="#e60000" stroke="#ffea75" stroke-width="2">
+            <!-- Horn -->
+            <path d="M 240,65 Q 215,30 185,45 Q 202,58 218,72 Z" fill="#ffd700"/>
+            <!-- Body -->
+            <path d="M 270,110 Q 250,70 205,75 Q 175,80 160,105 Q 180,125 225,120 Q 260,125 270,110 Z"/>
+            <!-- Head & Snout -->
+            <path d="M 205,75 Q 175,75 158,95 Q 170,110 190,105 Z"/>
+          </g>
+        </svg>
+      </div>
+
+      <h1 class="main-title">ENERGY METER <span>RUSH</span></h1>
+      <p class="sub-title">Buktikan Refleks & Stamina Banteng Emas!</p>
+
+      <div class="card-panel">
+        <div class="input-group">
+          <label class="input-label" for="player-name-input">Nama Jagoan:</label>
+          <input type="text" id="player-name-input" class="custom-input" placeholder="Masukkan Nama / Julukan..." maxlength="25" value="Banteng Merah">
+        </div>
+
+        <label class="input-label">Pilih Durasi Tantangan:</label>
+        <div class="duration-selector">
+          <button class="duration-pill selected" data-duration="15">⚡ 15s SPRINT</button>
+          <button class="duration-pill" data-duration="30">🔥 30s BEAST</button>
+          <button class="duration-pill" data-duration="45">🏆 45s IRON</button>
+        </div>
+
+        <button id="btn-start-game" class="btn-cta">
+          <span>GAS SEKARANG!</span> 🚀
+        </button>
+      </div>
+
+      <!-- Preview Leaderboard -->
+      <div class="leaderboard-container card-panel">
+        <div class="leaderboard-title">
+          <span>🏆 TOP JUARA ENERGI</span>
+          <button id="btn-refresh-leaderboard" class="btn-icon" style="padding: 3px 8px; font-size: 10px;">🔄 Segarkan</button>
+        </div>
+        <table class="lb-table">
+          <thead>
+            <tr>
+              <th class="rank-col">#</th>
+              <th>Nama</th>
+              <th style="text-align: right;">Skor</th>
+              <th>Gelar</th>
+            </tr>
+          </thead>
+          <tbody id="leaderboard-rows">
+            <!-- Diisi otomatis oleh JavaScript -->
+          </tbody>
+        </table>
+      </div>
+    </main>
+
+    <!-- ==================== 2. GAME SCREEN ==================== -->
+    <section id="game-screen" class="screen hidden">
+      <!-- HUD Stats -->
+      <div class="hud-bar">
+        <div class="hud-stat">
+          <span class="hud-label">SISA WAKTU</span>
+          <span id="hud-timer-text" class="hud-val gold">15s</span>
+        </div>
+        <div class="hud-stat" style="align-items: center;">
+          <span class="hud-label">COMBO</span>
+          <span id="hud-multiplier-badge" class="multiplier-badge mult-1-0">1.0x</span>
+        </div>
+        <div class="hud-stat" style="align-items: center;">
+          <span class="hud-label">TAPS/DETIK</span>
+          <span id="hud-rpm-text" class="hud-val">0</span>
+        </div>
+        <div class="hud-stat" style="align-items: flex-end;">
+          <span class="hud-label">TOTAL SKOR</span>
+          <span id="hud-score-text" class="hud-val gold">0</span>
+        </div>
+      </div>
+
+      <!-- Progress Timer Bar -->
+      <div class="timer-container">
+        <div id="hud-timer-bar" class="timer-bar"></div>
+      </div>
+
+      <!-- Overcharge Active Alert -->
+      <div id="overcharge-banner" class="overcharge-banner hidden">
+        ⚡ MAX OVERCHARGE BULL MODE! (POIN 2X LIPAT) ⚡
+      </div>
+
+      <!-- Meter & Bottle Arena -->
+      <div class="meter-arena">
+        <!-- 1. Speedometer Tachometer Gauge -->
+        <div class="gauge-wrapper">
+          <svg class="gauge-svg" viewBox="0 0 200 130">
+            <!-- Background Arc -->
+            <path d="M 20,110 A 80,80 0 0,1 180,110" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="14" stroke-linecap="round"/>
+            <!-- Low Zone (Blue) -->
+            <path d="M 20,110 A 80,80 0 0,1 70,38" fill="none" stroke="#00e5ff" stroke-width="14" stroke-linecap="round"/>
+            <!-- Medium Zone (Gold) -->
+            <path d="M 70,38 A 80,80 0 0,1 130,38" fill="none" stroke="#ffd700" stroke-width="14"/>
+            <!-- High Zone (Red Bull Crimson) -->
+            <path d="M 130,38 A 80,80 0 0,1 180,110" fill="none" stroke="#ff1744" stroke-width="14" stroke-linecap="round"/>
+          </svg>
+          <div id="gauge-needle" class="gauge-needle"></div>
+          <div class="gauge-pivot"></div>
+          <div class="gauge-center-text">
+            <div id="energy-percent-text" class="gauge-percent">0%</div>
+          </div>
+        </div>
+
+        <!-- 2. Kratingdaeng Liquid Can/Bottle -->
+        <div class="bottle-container">
+          <div id="bottle-aura" class="bottle-aura"></div>
+          <div class="bottle-glass">
+            <div class="bottle-neck"></div>
+            <div id="bottle-liquid-fill" class="bottle-liquid">
+              <div class="liquid-wave"></div>
+            </div>
+            <!-- Silhouette Stamp -->
+            <svg class="bottle-logo-overlay" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="42" fill="none" stroke="#ffd700" stroke-width="3"/>
+              <path d="M25,52 Q50,40 75,52" stroke="#e60000" stroke-width="5" fill="none"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sweet Spot / Bull's Eye Timing Multiplier -->
+      <div class="sweet-spot-bar-wrap">
+        <div class="sweet-spot-header">
+          <span>🎯 BULL'S EYE TIMING:</span>
+          <span style="color:#00e5ff;">TAP SAAT DI ZONA MERAH-EMAS UNTUK 3X CRIT!</span>
+        </div>
+        <div class="sweet-spot-track">
+          <div id="sweet-spot-zone" class="sweet-spot-zone"></div>
+          <div id="sweet-spot-indicator" class="sweet-spot-indicator"></div>
+        </div>
+      </div>
+
+      <!-- Giant Mash Button -->
+      <div class="tap-button-container">
+        <button id="btn-tap-energy" class="btn-giant-tap">
+          <span class="btn-giant-title">⚡ TAP / TEKAN CEPAT! ⚡</span>
+          <span class="btn-giant-subtitle">ATAU TEKAN SPASI (KEYBOARD)</span>
+        </button>
+      </div>
+
+      <!-- Floating Item Booster (Kaleng / Petir Terbang) -->
+      <div id="floating-booster" class="floating-booster">
+        🥫 <span class="booster-label">+500 ENERGI</span>
+      </div>
+    </section>
+
+    <!-- ==================== 3. GAME OVER & RESULT SCREEN ==================== -->
+    <section id="game-over-screen" class="screen hidden">
+      <div class="result-header">
+        <div class="result-badge-icon">🐂🏆</div>
+        <h2 style="color:#ffd700; text-transform:uppercase; font-size:22px;">TANTANGAN SELESAI!</h2>
+        <div id="res-final-score" class="result-score-highlight">0</div>
+        <div style="font-size:12px; color:var(--text-dim); text-transform:uppercase;">TOTAL SKOR ENERGI</div>
+        <div style="margin-top:10px;">
+          <span id="res-tier-badge" class="tier-badge">Gelar Stamina</span>
+        </div>
+      </div>
+
+      <div class="card-panel">
+        <div class="stats-grid">
+          <div class="stat-box">
+            <div id="res-total-taps" class="stat-box-val">0</div>
+            <div class="stat-box-lbl">Total Taps</div>
+          </div>
+          <div class="stat-box">
+            <div id="res-peak-rpm" class="stat-box-val">0</div>
+            <div class="stat-box-lbl">Peak Speed</div>
+          </div>
+          <div class="stat-box">
+            <div id="res-overcharge-pct" class="stat-box-val">0%</div>
+            <div class="stat-box-lbl">Max Charge</div>
+          </div>
+        </div>
+
+        <!-- Status Sinkronisasi Google Sheet -->
+        <div id="sheet-sync-status" class="status-pill pending">
+          <span class="spinner"></span> Menyimpan skor ke Google Sheet...
+        </div>
+
+        <!-- Link Sertifikat Google Drive -->
+        <div id="cert-link-container" class="hidden">
+          <a id="btn-view-cert" href="#" target="_blank" class="cert-btn">
+            📜 <span>Lihat Sertifikat Digital Resmi di Google Drive</span> ↗
+          </a>
+        </div>
+
+        <div class="result-actions">
+          <button id="btn-share-result" class="btn-secondary">
+            📤 BAGIKAN SKOR
+          </button>
+          <button id="btn-play-again" class="btn-cta" style="flex: 1.5; padding: 14px;">
+            MAIN LAGI 🔄
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== 4. COUNTDOWN OVERLAY ==================== -->
+    <div id="countdown-overlay" class="countdown-overlay hidden">
+      <div id="countdown-text" class="countdown-text">3</div>
+    </div>
+
+    <!-- ==================== 5. SETTINGS MODAL ==================== -->
+    <div id="settings-modal" class="modal-overlay hidden">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3 class="modal-title">⚙️ Sambungkan Google Sheet & Drive</h3>
+          <button id="btn-close-settings" class="btn-close">&times;</button>
+        </div>
+
+        <div class="info-box">
+          <strong>Tanpa Google Cloud!</strong> Deploy Google Apps Script sebagai <em>Web App</em> dengan akses <em>Anyone</em>, lalu tempel URL-nya di bawah. Skor pemain dan sertifikat digital otomatis tersimpan di Google Sheet & Google Drive Anda!
+        </div>
+
+        <div class="input-group">
+          <label class="input-label" for="appscript-url-input">URL Web App Google Apps Script:</label>
+          <input type="url" id="appscript-url-input" class="custom-input" placeholder="https://script.google.com/macros/s/.../exec">
+        </div>
+
+        <div id="api-status-msg" style="font-size:12px; margin-bottom:10px; min-height:18px;"></div>
+
+        <div class="modal-actions">
+          <button id="btn-test-api" class="btn-secondary" style="flex:1;">Uji Koneksi</button>
+          <button id="btn-save-settings" class="btn-cta" style="flex:1; font-size:14px; padding:12px;">Simpan URL</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/audio.js"></script>
+  <script src="js/particles.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Kratingdaeng Red Bull - Ketuk Ketupat Rush</title>
+  <title>Kratingdaeng Red Bull - Speedometer Lucky Dip 180°</title>
   <link rel="stylesheet" href="css/style.css">
   <link rel="icon" href="assets/logo.png">
 </head>
@@ -11,7 +11,7 @@
 
   <!-- Main Container -->
   <div id="app-container">
-    <!-- Canvas Visual FX (Partikel, Sparks, Gelembung, Teks Melayang) -->
+    <!-- Canvas Visual FX (Partikel, Sparks, Asap Knalpot, Ledakan Confetti) -->
     <canvas id="fx-canvas"></canvas>
 
     <!-- Top Bar -->
@@ -54,35 +54,77 @@
         <img src="assets/logo.png" alt="Kratingdaeng Red Bull" class="hero-logo-img">
       </div>
 
-      <h1 class="main-title">KETUK KETUPAT <span>RUSH</span></h1>
-      <p class="sub-title">Buktikan Stamina! Ketuk Ketupat Secepatnya Sampai Terbelah!</p>
+      <h1 class="main-title">SPEEDOMETER <span>LUCKY DIP</span></h1>
+      <p class="sub-title">Tekan & Tahan Gas! Putar Jarum 180° Untuk Menentukan Hadiahmu!</p>
 
-      <div class="game-hint-pill">
-        <span>Keluarkan seluruh energimu! Semakin cepat ketukan, semakin lebar belahan ketupat!</span>
-      </div>
-
+      <!-- Panel Pengaturan Pemain & Booth -->
       <div class="card-panel">
         <div class="input-group">
-          <label class="input-label" for="player-name-input">Nama Jagoan:</label>
-          <input type="text" id="player-name-input" class="custom-input" placeholder="Masukkan Nama / Julukan..." maxlength="25" value="Jagoan Ketupat">
+          <label class="input-label" for="player-name-input">Nama Peserta:</label>
+          <input type="text" id="player-name-input" class="custom-input" placeholder="Masukkan Nama Lengkap..." maxlength="25" value="Jagoan Kratingdaeng">
         </div>
 
-        <label class="input-label">Pilih Durasi Tantangan:</label>
-        <div class="duration-selector">
-          <button class="duration-pill selected" data-duration="15">15s SPRINT</button>
-          <button class="duration-pill" data-duration="30">30s BEAST</button>
-          <button class="duration-pill" data-duration="45">45s IRON</button>
+        <label class="input-label">Pilih Lokasi Booth Acara:</label>
+        <div class="location-selector">
+          <button class="location-pill selected" data-location="RA">
+            <span class="loc-badge">BOOTH 1</span>
+            <span class="loc-title">Rest Area (RA)</span>
+            <span class="loc-item-hint">Khusus Tongkat Tol</span>
+          </button>
+          <button class="location-pill" data-location="Pelabuhan">
+            <span class="loc-badge">BOOTH 2</span>
+            <span class="loc-title">Pelabuhan</span>
+            <span class="loc-item-hint">Khusus Cover Tas</span>
+          </button>
+        </div>
+
+        <!-- Tabel Hadiah Lucky Dip -->
+        <div class="prize-showcase-box">
+          <div class="prize-showcase-title">DAFTAR HADIAH TIER LUCKY DIP</div>
+          
+          <div class="tier-card tier-card-1">
+            <div class="tier-card-header">
+              <span class="tier-tag tag-t1">TIER 1 — 10%</span>
+              <span class="tier-ratio-tag">Rasio 1 : 1</span>
+            </div>
+            <div class="tier-items-list">
+              <span class="prize-chip gold">Kaos Eksklusif</span>
+              <span class="prize-chip gold">Topi Kratingdaeng</span>
+            </div>
+          </div>
+
+          <div class="tier-card tier-card-2">
+            <div class="tier-card-header">
+              <span class="tier-tag tag-t2">TIER 2 — 30%</span>
+              <span class="tier-ratio-tag">Rasio 2 : 3 : 4</span>
+            </div>
+            <div class="tier-items-list">
+              <span class="prize-chip blue">Payung Lipat</span>
+              <span class="prize-chip blue">Jas Hujan</span>
+              <span id="tier2-dynamic-item" class="prize-chip blue active-loc">Tongkat Tol (Khusus RA)</span>
+            </div>
+          </div>
+
+          <div class="tier-card tier-card-3">
+            <div class="tier-card-header">
+              <span class="tier-tag tag-t3">TIER 3 — 60%</span>
+              <span class="tier-ratio-tag">Pasti Dapat</span>
+            </div>
+            <div class="tier-items-list">
+              <span class="prize-chip green">Shopping Bag Kratingdaeng</span>
+            </div>
+          </div>
         </div>
 
         <button id="btn-start-game" class="btn-cta">
-          <span>MULAI KETUK KETUPAT</span>
+          <span>GAS SPEEDOMETER SEKARANG</span>
         </button>
       </div>
 
-      <!-- Preview Leaderboard -->
+      <!-- Preview Leaderboard / Riwayat Pemenang -->
       <div class="leaderboard-container card-panel">
         <div class="leaderboard-title">
-          <span>PAPAN PERINGKAT</span>
+          <span>RIWAYAT PEMENANG LUCKY DIP</span>
           <button id="btn-refresh-leaderboard" class="btn-icon" style="padding: 4px 10px; font-size: 11px;">
             <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;">
               <polyline points="23 4 23 10 17 10"></polyline>
@@ -97,8 +139,8 @@
             <tr>
               <th class="rank-col">#</th>
               <th>Nama</th>
-              <th style="text-align: right;">Skor</th>
-              <th>Gelar</th>
+              <th style="text-align: right;">Speed</th>
+              <th>Hadiah Dimenangkan</th>
             </tr>
           </thead>
           <tbody id="leaderboard-rows">
@@ -108,172 +150,203 @@
       </div>
     </main>
 
-    <!-- ==================== 2. GAME SCREEN ==================== -->
+    <!-- ==================== 2. GAME SCREEN (SPEEDOMETER 180°) ==================== -->
     <section id="game-screen" class="screen hidden">
       <!-- HUD Stats -->
       <div class="hud-bar">
         <div class="hud-stat">
-          <span class="hud-label">SISA WAKTU</span>
-          <span id="hud-timer-text" class="hud-val gold">15s</span>
+          <span class="hud-label">PESERTA</span>
+          <span id="hud-player-display" class="hud-val gold">Banteng Juara</span>
         </div>
         <div class="hud-stat" style="align-items: center;">
-          <span class="hud-label">COMBO</span>
-          <span id="hud-multiplier-badge" class="multiplier-badge mult-1-0">1.0x</span>
-        </div>
-        <div class="hud-stat" style="align-items: center;">
-          <span class="hud-label">TAPS/DETIK</span>
-          <span id="hud-rpm-text" class="hud-val">0</span>
+          <span class="hud-label">BOOTH LOKASI</span>
+          <span id="hud-location-badge" class="location-badge-pill">Rest Area (RA)</span>
         </div>
         <div class="hud-stat" style="align-items: flex-end;">
-          <span class="hud-label">TOTAL SKOR</span>
-          <span id="hud-score-text" class="hud-val gold">0</span>
+          <span class="hud-label">STATUS GAS</span>
+          <span id="hud-gas-status" class="hud-val gold">SIAP GAS!</span>
         </div>
-      </div>
-
-      <!-- Progress Timer Bar -->
-      <div class="timer-container">
-        <div id="hud-timer-bar" class="timer-bar"></div>
       </div>
 
       <!-- Overcharge / Tier Notification Banner -->
-      <div id="overcharge-banner" class="overcharge-banner hidden">
-        MAX BELAHAN TERCAPAI!
+      <div id="overcharge-banner" class="overcharge-banner">
+        TEKAN & TAHAN PEDAL GAS UNTUK MEMUTAR JARUM!
       </div>
 
-      <!-- Ketupat Arena -->
-      <div class="ketupat-arena">
-        <!-- Split Status & Natural Energy Bar -->
-        <div class="split-hud-box">
-          <div class="split-status-row">
-            <span class="split-status-label">PROGRES BELAHAN:</span>
-            <span id="ketupat-split-status" class="split-status-text">UTUH</span>
-            <span id="energy-percent-text" class="split-percent-val">0%</span>
-          </div>
+      <!-- SPEEDOMETER ARENA (180 DERAJAT) -->
+      <div class="speedometer-arena">
+        <div class="speedometer-box">
+          <!-- SVG Gauge Face 180 Derajat -->
+          <svg viewBox="0 0 380 230" class="speedometer-svg">
+            <defs>
+              <!-- Gradient Tier 3 (0-108 KM/H, 60%) -->
+              <linearGradient id="gradTier3" x1="0%" y1="100%" x2="50%" y2="0%">
+                <stop offset="0%" stop-color="#059669"/>
+                <stop offset="100%" stop-color="#10b981"/>
+              </linearGradient>
 
-          <div class="ketupat-progress-track">
-            <div id="ketupat-progress-fill" class="ketupat-progress-fill"></div>
-          </div>
-        </div>
+              <!-- Gradient Tier 2 (108-162 KM/H, 30%) -->
+              <linearGradient id="gradTier2" x1="0%" y1="0%" x2="100%" y2="50%">
+                <stop offset="0%" stop-color="#0284c7"/>
+                <stop offset="100%" stop-color="#38bdf8"/>
+              </linearGradient>
 
-        <!-- Ketupat Stage Object -->
-        <div id="ketupat-stage" class="ketupat-stage">
-          <!-- Inner Core Golden Prize (Muncul saat terbelah) -->
-          <div id="ketupat-inner-core" class="ketupat-inner-core">
-            <div class="core-radial-glow"></div>
-            <img src="assets/logo.png" alt="Kratingdaeng Prize" class="core-prize-img">
-            <div class="core-prize-text">TERBELAH SEMPURNA!</div>
-          </div>
+              <!-- Gradient Tier 1 Redline (162-180 KM/H, 10%) -->
+              <linearGradient id="gradTier1" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#f59e0b"/>
+                <stop offset="100%" stop-color="#ef4444"/>
+              </linearGradient>
 
-          <!-- Left Half of Ketupat -->
-          <div id="ketupat-half-left" class="ketupat-half ketupat-half-left">
-            <svg viewBox="0 0 130 220" class="ketupat-svg">
-              <defs>
-                <linearGradient id="janurGradL1" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stop-color="#9bd047"/>
-                  <stop offset="50%" stop-color="#558b2f"/>
-                  <stop offset="100%" stop-color="#2e5718"/>
-                </linearGradient>
-                <linearGradient id="janurGradL2" x1="100%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" stop-color="#b8e966"/>
-                  <stop offset="50%" stop-color="#689f38"/>
-                  <stop offset="100%" stop-color="#1e3a0f"/>
-                </linearGradient>
-              </defs>
-              <g>
-                <!-- Base Left Polygon -->
-                <path d="M 125,20 L 25,110 L 125,195 Z" fill="url(#janurGradL1)" stroke="#1e3a0f" stroke-width="2.5"/>
-                <!-- Woven diagonal tile bands -->
-                <polygon points="125,20 100,42 125,65" fill="url(#janurGradL2)" opacity="0.95"/>
-                <polygon points="100,42 75,65 100,88 125,65" fill="url(#janurGradL1)" opacity="0.95"/>
-                <polygon points="75,65 50,88 75,110 100,88" fill="url(#janurGradL2)" opacity="0.95"/>
-                <polygon points="50,88 25,110 50,132 75,110" fill="url(#janurGradL1)" opacity="0.95"/>
-                <polygon points="75,110 50,132 75,155 100,132" fill="url(#janurGradL2)" opacity="0.95"/>
-                <polygon points="100,132 75,155 100,178 125,155" fill="url(#janurGradL1)" opacity="0.95"/>
-                <polygon points="100,88 125,65 125,110 100,132" fill="url(#janurGradL2)" opacity="0.95"/>
-                <polygon points="100,132 125,110 125,155" fill="url(#janurGradL1)" opacity="0.9"/>
-                <polygon points="100,178 125,155 125,195" fill="url(#janurGradL2)" opacity="0.9"/>
-                <!-- Inner Weave Lines -->
-                <path d="M 125,50 L 58,110 L 125,170" fill="none" stroke="#254812" stroke-width="2.5"/>
-                <path d="M 125,80 L 90,110 L 125,145" fill="none" stroke="#254812" stroke-width="2.5"/>
-                <path d="M 100,42 L 50,88 L 100,132" fill="none" stroke="#ffd700" stroke-width="1.2" opacity="0.6"/>
-                <!-- Jagged crack fissure edge -->
-                <path id="crack-path-left" d="M 125,20 L 122,55 L 127,90 L 120,125 L 126,160 L 125,195" stroke="#ffe066" stroke-width="3" fill="none"/>
-              </g>
-            </svg>
-          </div>
+              <!-- Dial Drop Shadow -->
+              <filter id="gaugeGlow" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="6" result="blur"/>
+                <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+              </filter>
+            </defs>
 
-          <!-- Right Half of Ketupat -->
-          <div id="ketupat-half-right" class="ketupat-half ketupat-half-right">
-            <svg viewBox="115 0 130 220" class="ketupat-svg">
-              <defs>
-                <linearGradient id="janurGradR1" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stop-color="#9bd047"/>
-                  <stop offset="50%" stop-color="#689f38"/>
-                  <stop offset="100%" stop-color="#2e5718"/>
-                </linearGradient>
-                <linearGradient id="janurGradR2" x1="100%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" stop-color="#c5f378"/>
-                  <stop offset="50%" stop-color="#7cb342"/>
-                  <stop offset="100%" stop-color="#1e3a0f"/>
-                </linearGradient>
-              </defs>
-              <g>
-                <!-- Base Right Polygon -->
-                <path d="M 125,20 L 225,110 L 125,195 Z" fill="url(#janurGradR1)" stroke="#1e3a0f" stroke-width="2.5"/>
-                <!-- Woven diagonal tile bands -->
-                <polygon points="125,20 150,42 125,65" fill="url(#janurGradR2)" opacity="0.95"/>
-                <polygon points="150,42 175,65 150,88 125,65" fill="url(#janurGradR1)" opacity="0.95"/>
-                <polygon points="175,65 200,88 175,110 150,88" fill="url(#janurGradR2)" opacity="0.95"/>
-                <polygon points="200,88 225,110 200,132 175,110" fill="url(#janurGradR1)" opacity="0.95"/>
-                <polygon points="175,110 200,132 175,155 150,132" fill="url(#janurGradR2)" opacity="0.95"/>
-                <polygon points="150,132 175,155 150,178 125,155" fill="url(#janurGradR1)" opacity="0.95"/>
-                <polygon points="150,88 125,65 125,110 150,132" fill="url(#janurGradR2)" opacity="0.95"/>
-                <polygon points="150,132 125,110 125,155" fill="url(#janurGradR1)" opacity="0.9"/>
-                <polygon points="150,178 125,155 125,195" fill="url(#janurGradR2)" opacity="0.9"/>
-                <!-- Inner Weave Lines -->
-                <path d="M 125,50 L 192,110 L 125,170" fill="none" stroke="#254812" stroke-width="2.5"/>
-                <path d="M 125,80 L 160,110 L 125,145" fill="none" stroke="#254812" stroke-width="2.5"/>
-                <path d="M 150,42 L 200,88 L 150,132" fill="none" stroke="#ffd700" stroke-width="1.2" opacity="0.6"/>
-                <!-- Jagged crack fissure edge -->
-                <path id="crack-path-right" d="M 125,20 L 122,55 L 127,90 L 120,125 L 126,160 L 125,195" stroke="#ffe066" stroke-width="3" fill="none"/>
-              </g>
-            </svg>
-          </div>
+            <!-- Outer Metallic Bezel Ring (180 Deg Arc) -->
+            <path d="M 30,190 A 160,160 0 0,1 350,190" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="26" stroke-linecap="round"/>
 
-          <!-- Ketupat Janur Tails / Pita Anyaman -->
-          <div id="ketupat-tails" class="ketupat-tails">
-            <svg viewBox="0 0 100 80" class="tails-svg">
-              <path d="M 44,0 Q 28,40 12,75" stroke="#7cb342" stroke-width="6" fill="none" stroke-linecap="round"/>
-              <path d="M 56,0 Q 72,40 88,75" stroke="#8bc34a" stroke-width="6" fill="none" stroke-linecap="round"/>
-              <path d="M 50,0 Q 48,35 44,72" stroke="#558b2f" stroke-width="4" fill="none" stroke-linecap="round"/>
-            </svg>
+            <!-- Sektor 3 Arc (60%): 0 s/d 108 km/h (-90deg s/d +18deg, panjang arc 108 deg) -->
+            <!-- Radius 150: Dari (40,190) s/d (190 + 150*cos(18°), 190 - 150*sin(18°)) = (332.6, 143.6) -->
+            <path id="arc-tier-3" d="M 40,190 A 150,150 0 0,1 236.3,47.3" fill="none" stroke="url(#gradTier3)" stroke-width="16" stroke-linecap="round"/>
+
+            <!-- Sektor 2 Arc (30%): 108 s/d 162 km/h (+18deg s/d +72deg, panjang arc 54 deg) -->
+            <!-- Dari (236.3, 47.3) s/d (190 + 150*cos(-72°+90°=18°)) -> (332.6, 143.6) -->
+            <path id="arc-tier-2" d="M 239.5,48.5 A 150,150 0 0,1 332.6,143.6" fill="none" stroke="url(#gradTier2)" stroke-width="16"/>
+
+            <!-- Sektor 1 Arc (10% - REDLINE): 162 s/d 180 km/h (+72deg s/d +90deg, panjang arc 18 deg) -->
+            <!-- Dari (332.6, 143.6) s/d (340, 190) -->
+            <path id="arc-tier-1" d="M 334.2,148.8 A 150,150 0 0,1 340,190" fill="none" stroke="url(#gradTier1)" stroke-width="16" stroke-linecap="round" filter="url(#gaugeGlow)"/>
+
+            <!-- Label Sektor Pada Dial -->
+            <text x="120" y="80" class="gauge-sector-label tier3-lbl">TIER 3 (60%)</text>
+            <text x="290" y="85" class="gauge-sector-label tier2-lbl">TIER 2 (30%)</text>
+            <text x="345" y="140" class="gauge-sector-label tier1-lbl">T1 (10%)</text>
+
+            <!-- Speedometer Radial Ticks & Numbers -->
+            <g id="speed-ticks-group">
+              <!-- 0 KM/H -->
+              <line x1="45" y1="190" x2="60" y2="190" stroke="#fff" stroke-width="3"/>
+              <text x="70" y="194" class="speed-tick-num">0</text>
+
+              <!-- 20 KM/H -->
+              <line x1="53" y1="144" x2="67" y2="149" stroke="#fff" stroke-width="2.5"/>
+              <text x="77" y="156" class="speed-tick-num">20</text>
+
+              <!-- 40 KM/H -->
+              <line x1="77" y1="103" x2="89" y2="112" stroke="#fff" stroke-width="2.5"/>
+              <text x="98" y="123" class="speed-tick-num">40</text>
+
+              <!-- 60 KM/H -->
+              <line x1="113" y1="70" x2="122" y2="82" stroke="#fff" stroke-width="2.5"/>
+              <text x="130" y="96" class="speed-tick-num">60</text>
+
+              <!-- 80 KM/H -->
+              <line x1="158" y1="49" x2="163" y2="63" stroke="#fff" stroke-width="2.5"/>
+              <text x="165" y="80" class="speed-tick-num">80</text>
+
+              <!-- 100 KM/H -->
+              <line x1="207" y1="47" x2="204" y2="61" stroke="#fff" stroke-width="2.5"/>
+              <text x="200" y="79" class="speed-tick-num">100</text>
+
+              <!-- 120 KM/H -->
+              <line x1="255" y1="62" x2="247" y2="75" stroke="#fff" stroke-width="2.5"/>
+              <text x="238" y="94" class="speed-tick-num">120</text>
+
+              <!-- 140 KM/H -->
+              <line x1="295" y1="92" x2="284" y2="102" stroke="#fff" stroke-width="2.5"/>
+              <text x="268" y="118" class="speed-tick-num">140</text>
+
+              <!-- 160 KM/H -->
+              <line x1="322" y1="132" x2="308" y2="138" stroke="#ff3344" stroke-width="3"/>
+              <text x="288" y="150" class="speed-tick-num redline">160</text>
+
+              <!-- 180 KM/H (MAX) -->
+              <line x1="335" y1="190" x2="320" y2="190" stroke="#ff1744" stroke-width="3.5"/>
+              <text x="298" y="194" class="speed-tick-num redline">180</text>
+            </g>
+
+            <!-- JARUM SPEEDOMETER (NEEDLE) -->
+            <!-- Pivot di (190, 190). Default menghadap -90 deg (0 km/h, ke kiri) -->
+            <g id="speedometer-needle-group" style="transform-origin: 190px 190px; transform: rotate(-90deg);">
+              <!-- Bayangan Jarum -->
+              <polygon points="186,192 194,192 191,48 189,48" fill="rgba(0,0,0,0.5)" filter="blur(2px)"/>
+              <!-- Bilah Jarum Utama -->
+              <polygon points="187,190 193,190 191.5,42 188.5,42" fill="url(#gradTier1)"/>
+              <!-- Ujung Jarum Menyala (Glow Tip) -->
+              <polygon points="188,52 192,52 190,32" fill="#ffd700" filter="url(#gaugeGlow)"/>
+            </g>
+
+            <!-- Pusat Jarum (Center Bezel Hub & Logo Kratingdaeng) -->
+            <circle cx="190" cy="190" r="32" fill="#0b1736" stroke="#ffd700" stroke-width="3"/>
+            <circle cx="190" cy="190" r="26" fill="#070e20" stroke="rgba(255,255,255,0.2)" stroke-width="1.5"/>
+            <!-- Logo Banteng di Tengah Hub -->
+            <image href="assets/logo.png" x="170" y="174" width="40" height="32" preserveAspectRatio="xMidYMid meet"/>
+          </svg>
+
+          <!-- Odometer & Digital Speed Readout Box -->
+          <div class="dashboard-readout-panel">
+            <div class="digital-speed-wrap">
+              <span id="speed-digital-val" class="speed-digital-number">0</span>
+              <span class="speed-digital-unit">KM/H</span>
+            </div>
+
+            <!-- ODOMETER (Rolling Digital Mileage Display) -->
+            <div class="odometer-container">
+              <span class="odometer-label">ODOMETER</span>
+              <div class="odometer-rolling-box">
+                <span class="odo-digit" id="odo-d1">0</span>
+                <span class="odo-digit" id="odo-d2">0</span>
+                <span class="odo-digit" id="odo-d3">1</span>
+                <span class="odo-digit" id="odo-d4">8</span>
+                <span class="odo-digit" id="odo-d5">0</span>
+                <span class="odo-unit-tag">KM</span>
+              </div>
+            </div>
+
+            <!-- Live Target Zone Status -->
+            <div id="live-zone-status" class="zone-status-badge zone-idle">
+              ZONA: SIAP PUTAR
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- Sweet Spot / Bull's Eye Timing Multiplier -->
-      <div class="sweet-spot-bar-wrap">
-        <div class="sweet-spot-header">
-          <span>BULL'S EYE TIMING:</span>
-          <span style="color:#00e5ff;">TAP SAAT DI ZONA MERAH-EMAS UNTUK 3X CRIT</span>
+      <!-- PROGRESS CHARGE TAHAN GAS -->
+      <div class="hold-gauge-container">
+        <div class="hold-label-row">
+          <span class="hold-instruction-text" id="hold-status-instruction">TAHAN PEDAL GAS UNTUK MEMUTAR JARUM</span>
+          <span id="hold-duration-text" class="hold-duration-val">0.0s</span>
         </div>
-        <div class="sweet-spot-track">
-          <div id="sweet-spot-zone" class="sweet-spot-zone"></div>
-          <div id="sweet-spot-indicator" class="sweet-spot-indicator"></div>
+        <div class="hold-charge-track">
+          <div id="hold-charge-bar" class="hold-charge-bar"></div>
         </div>
       </div>
 
-      <!-- Giant Mash Button -->
-      <div class="tap-button-container">
-        <button id="btn-tap-energy" class="btn-giant-tap">
-          <span class="btn-giant-title">KETUK KETUPAT!</span>
-          <span class="btn-giant-subtitle">KETUK SECEPAT MUNGKIN ATAU TEKAN SPASI</span>
+      <!-- PEDAL GAS INTERAKTIF (PRESS & HOLD) -->
+      <div class="pedal-control-area">
+        <button id="btn-hold-gas" class="btn-pedal-gas" aria-label="Tekan dan Tahan Pedal Gas">
+          <div class="pedal-surface">
+            <!-- Tread Metal Lines -->
+            <div class="pedal-treads">
+              <div class="tread-bar"></div>
+              <div class="tread-bar"></div>
+              <div class="tread-bar"></div>
+              <div class="tread-bar"></div>
+            </div>
+
+            <!-- Pedal Center Content -->
+            <div class="pedal-content">
+              <svg class="pedal-speed-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
+              </svg>
+              <span class="pedal-title" id="pedal-btn-title">TEKAN & TAHAN</span>
+              <span class="pedal-subtitle" id="pedal-btn-subtitle">TAHAN PEDAL GAS (ATAU SPASI)</span>
+            </div>
+          </div>
         </button>
-      </div>
-
-      <!-- Floating Item Booster (Kaleng / Petir Terbang) -->
-      <div id="floating-booster" class="floating-booster">
-        <span class="booster-label">+500 ENERGI</span>
       </div>
     </section>
 
@@ -283,35 +356,41 @@
         <div class="result-badge-icon">
           <img src="assets/logo.png" alt="Kratingdaeng Logo" style="height: 48px; width: auto; object-fit: contain;">
         </div>
-        <h2 style="color:#ffd700; text-transform:uppercase; font-size:20px; letter-spacing:1px; margin-top:5px;">HASIL KETUK KETUPAT</h2>
-        <div id="res-final-split" class="result-split-banner">KETUPAT TERBELAH 0%</div>
-        <div id="res-final-score" class="result-score-highlight">0</div>
-        <div style="font-size:12px; color:var(--text-dim); text-transform:uppercase; letter-spacing:1px;">TOTAL SKOR AKHIR</div>
-        <div style="margin-top:10px;">
-          <span id="res-tier-badge" class="tier-badge">Tier 3: Terbelah 30%</span>
+        <h2 style="color:#ffd700; text-transform:uppercase; font-size:20px; letter-spacing:1px; margin-top:5px;">HASIL LUCKY DIP SPEEDOMETER</h2>
+        
+        <!-- Big Prize Reveal Card -->
+        <div class="prize-revealed-card">
+          <div id="res-prize-icon-box" class="prize-artwork-box">
+            <!-- Dynamic SVG Icon diisi JavaScript -->
+          </div>
+          <div class="prize-tagline">SELAMAT! ANDA MENDAPATKAN:</div>
+          <div id="res-prize-name" class="prize-hero-title">Shopping Bag Kratingdaeng</div>
+          <div style="margin-top:8px;">
+            <span id="res-tier-badge" class="tier-badge">Tier 3 (60%)</span>
+          </div>
+          <p id="res-tier-desc" class="result-tier-desc">Hadiah langsung dari Kratingdaeng Lucky Dip!</p>
         </div>
-        <p id="res-tier-desc" class="result-tier-desc">Ketupat berhasil terbelah!</p>
       </div>
 
       <div class="card-panel">
         <div class="stats-grid">
           <div class="stat-box">
-            <div id="res-total-taps" class="stat-box-val">0</div>
-            <div class="stat-box-lbl">Total Taps</div>
+            <div id="res-final-speed" class="stat-box-val">0 KM/H</div>
+            <div class="stat-box-lbl">Speed Jarum</div>
           </div>
           <div class="stat-box">
-            <div id="res-peak-rpm" class="stat-box-val">0</div>
-            <div class="stat-box-lbl">Peak Speed</div>
+            <div id="res-hold-time" class="stat-box-val">0.0s</div>
+            <div class="stat-box-lbl">Durasi Tahan</div>
           </div>
           <div class="stat-box">
-            <div id="res-overcharge-pct" class="stat-box-val">0%</div>
-            <div class="stat-box-lbl">Belahan Ketupat</div>
+            <div id="res-booth-loc" class="stat-box-val">RA</div>
+            <div class="stat-box-lbl">Lokasi Booth</div>
           </div>
         </div>
 
         <!-- Status Sinkronisasi Google Sheet -->
         <div id="sheet-sync-status" class="status-pill pending">
-          <span class="spinner"></span> Menyimpan skor ke Google Sheet...
+          <span class="spinner"></span> Menyimpan data pemenang ke Google Sheet...
         </div>
 
         <!-- Link Sertifikat Google Drive -->
@@ -341,18 +420,59 @@
               <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
               <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
             </svg>
-            BAGIKAN SKOR
+            BAGIKAN
           </button>
           <button id="btn-play-again" class="btn-cta" style="flex: 1.5; padding: 14px;">
             <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M1 4v6h6"></path>
               <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
             </svg>
-            MAIN LAGI
+            PUTAR LAGI
           </button>
         </div>
       </div>
     </section>
+
+    <!-- ==================== 4. COUNTDOWN OVERLAY ==================== -->
+    <div id="countdown-overlay" class="countdown-overlay hidden">
+      <div id="countdown-text" class="countdown-text">3</div>
+    </div>
+
+    <!-- ==================== 5. SETTINGS MODAL ==================== -->
+    <div id="settings-modal" class="modal-overlay hidden">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3 class="modal-title">Integrasi Google Sheet & Drive</h3>
+          <button id="btn-close-settings" class="btn-close">&times;</button>
+        </div>
+
+        <div class="info-box">
+          <strong>Tanpa Google Cloud!</strong> Deploy Google Apps Script sebagai <em>Web App</em> dengan akses <em>Anyone</em>, lalu tempel URL-nya di bawah. Hasil Lucky Dip peserta otomatis tersimpan ke Google Sheet & Drive Anda!
+        </div>
+
+        <div class="input-group">
+          <label class="input-label" for="appscript-url-input">URL Web App Google Apps Script:</label>
+          <input type="url" id="appscript-url-input" class="custom-input" placeholder="https://script.google.com/macros/s/.../exec">
+        </div>
+
+        <div id="api-status-msg" style="font-size:12px; margin-bottom:10px; min-height:18px;"></div>
+
+        <div class="modal-actions">
+          <button id="btn-test-api" class="btn-secondary" style="flex:1;">Uji Koneksi</button>
+          <button id="btn-save-settings" class="btn-cta" style="flex:1; font-size:14px; padding:12px;">Simpan URL</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/audio.js"></script>
+  <script src="js/particles.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>
 
     <!-- ==================== 4. COUNTDOWN OVERLAY ==================== -->
     <div id="countdown-overlay" class="countdown-overlay hidden">

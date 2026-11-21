@@ -18,6 +18,13 @@ class SoundSystem {
     this.sfxGain = null;
     this.bgmGain = null;
     
+    // Engine Rev Audio Nodes
+    this.engineOsc1 = null;
+    this.engineOsc2 = null;
+    this.engineGain = null;
+    this.engineFilter = null;
+    this.isRevving = false;
+    
     // Inisialisasi Audio Context saat interaksi pengguna pertama kali
     this.initAudioContext();
   }
@@ -258,6 +265,142 @@ class SoundSystem {
 
     osc.start(t);
     osc.stop(t + (isFinal ? 0.4 : 0.15));
+  }
+
+  /**
+   * Sound FX: Suara Mesin Menderu (Engine Rev) saat Tekan & Tahan Gas
+   */
+  startEngineRev() {
+    if (this.isMuted) return;
+    this.ensureContext();
+    if (!this.ctx || this.isRevving) return;
+
+    try {
+      this.isRevving = true;
+      const t = this.ctx.currentTime;
+
+      // Filter Lowpass untuk karakter bass/mesin mobil balap
+      this.engineFilter = this.ctx.createBiquadFilter();
+      this.engineFilter.type = 'lowpass';
+      this.engineFilter.frequency.setValueAtTime(320, t);
+      this.engineFilter.Q.setValueAtTime(4.0, t);
+
+      // Gain kontrol
+      this.engineGain = this.ctx.createGain();
+      this.engineGain.gain.setValueAtTime(0.01, t);
+      this.engineGain.gain.linearRampToValueAtTime(0.45, t + 0.15);
+
+      // Osc 1: Sawtooth (suara putaran silinder mesin)
+      this.engineOsc1 = this.ctx.createOscillator();
+      this.engineOsc1.type = 'sawtooth';
+      this.engineOsc1.frequency.setValueAtTime(65, t);
+
+      // Osc 2: Triangle (sub rumble)
+      this.engineOsc2 = this.ctx.createOscillator();
+      this.engineOsc2.type = 'triangle';
+      this.engineOsc2.frequency.setValueAtTime(45, t);
+
+      this.engineOsc1.connect(this.engineFilter);
+      this.engineOsc2.connect(this.engineFilter);
+      this.engineFilter.connect(this.engineGain);
+      this.engineGain.connect(this.sfxGain);
+
+      this.engineOsc1.start(t);
+      this.engineOsc2.start(t);
+    } catch (e) {
+      console.warn('Gagal memulai audio rev mesin:', e);
+    }
+  }
+
+  /**
+   * Update Pitch & Filter Mesin secara Real-time berdasarkan RPM / Sudut Jarum
+   */
+  updateEngineRev(intensity = 0.5) {
+    if (!this.isRevving || !this.ctx) return;
+    const t = this.ctx.currentTime;
+    const clamped = Math.max(0, Math.min(1, intensity));
+
+    if (this.engineOsc1 && this.engineOsc2 && this.engineFilter) {
+      const baseFreq = 70 + (clamped * 180); // 70Hz - 250Hz
+      this.engineOsc1.frequency.setTargetAtTime(baseFreq, t, 0.05);
+      this.engineOsc2.frequency.setTargetAtTime(baseFreq * 0.65, t, 0.05);
+      this.engineFilter.frequency.setTargetAtTime(400 + (clamped * 1400), t, 0.05);
+    }
+  }
+
+  /**
+   * Hentikan Suara Mesin Menderu
+   */
+  stopEngineRev() {
+    if (!this.isRevving || !this.ctx) return;
+    this.isRevving = false;
+    try {
+      const t = this.ctx.currentTime;
+      if (this.engineGain) {
+        this.engineGain.gain.linearRampToValueAtTime(0.001, t + 0.15);
+      }
+      setTimeout(() => {
+        if (this.engineOsc1) {
+          try { this.engineOsc1.stop(); } catch (e) {}
+          this.engineOsc1.disconnect();
+          this.engineOsc1 = null;
+        }
+        if (this.engineOsc2) {
+          try { this.engineOsc2.stop(); } catch (e) {}
+          this.engineOsc2.disconnect();
+          this.engineOsc2 = null;
+        }
+      }, 160);
+    } catch (e) {
+      console.warn('Error saat stopEngineRev:', e);
+    }
+  }
+
+  /**
+   * Sound FX: Detik Jarum Speedometer (Needle Tick)
+   */
+  playNeedleTick(pitch = 1.0) {
+    if (this.isMuted) return;
+    this.ensureContext();
+    if (!this.ctx) return;
+
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(600 * pitch, t);
+    osc.frequency.exponentialRampToValueAtTime(120 * pitch, t + 0.035);
+
+    gain.gain.setValueAtTime(0.28, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.035);
+
+    osc.connect(gain);
+    gain.connect(this.sfxGain);
+
+    osc.start(t);
+    osc.stop(t + 0.035);
+  }
+
+  /**
+   * Sound FX: Fanfare Hadiah Lucky Dip Sesuai Tier
+   */
+  playPrizeWin(tier = 3) {
+    if (this.isMuted) return;
+    this.ensureContext();
+    if (!this.ctx) return;
+
+    if (tier === 1) {
+      // Fanfare Megah Tier 1 (Kaos & Topi)
+      this.playVictory();
+      setTimeout(() => this.playPowerUp(), 300);
+    } else if (tier === 2) {
+      // Fanfare Tier 2 (Payung / Jas Hujan / Tongkat Tol)
+      this.playVictory();
+    } else {
+      // Tier 3 (Shopping Bag)
+      this.playPowerUp();
+    }
   }
 
   /**

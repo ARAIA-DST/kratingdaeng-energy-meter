@@ -1,95 +1,75 @@
 /**
  * ===================================================================================
- * KRATINGDAENG ENERGY METER - CORE GAME LOGIC & INTERACTION ENGINE
+ * KRATINGDAENG SPEEDOMETER LUCKY DIP 180° - CORE GAME LOGIC
  * ===================================================================================
- * Mengatur siklus permainan, fisika pengisian energi, sweet spot combo,
- * item booster terbang, pencatatan statistik, dan integrasi UI.
+ * Mekanik:
+ * 1. Odometer / Speedometer 180 Derajat (-90° s/d +90°)
+ * 2. PRESS & HOLD (Tekan & Tahan Pedal Gas)
+ * 3. Jarum berputar 180° secara acak saat di-hold untuk menentukan hadiah TIER LUCKY DIP:
+ *    - Tier 1 — 10%: Kaos dan Topi (1:1).
+ *    - Tier 2 — 30%: Payung Lipat, Jas Hujan, Tongkat Tol (RA) / Cover Tas (Pelabuhan) (2:3:4).
+ *    - Tier 3 — 60%: Shopping Bag saja.
  * ===================================================================================
  */
 
 class KratingdaengGame {
   constructor() {
     // State Game
-    this.state = 'INIT'; // INIT, COUNTDOWN, PLAYING, GAMEOVER
-    this.playerName = 'Banteng Juara';
-    this.duration = 15; // default 15s
-    this.timeLeft = 15;
-    this.timerInterval = null;
+    this.state = 'INIT'; // INIT, COUNTDOWN, PLAYING, DECELERATING, GAMEOVER
+    this.playerName = 'Jagoan Kratingdaeng';
+    this.location = 'RA'; // 'RA' atau 'Pelabuhan'
+
+    // Speedometer 180° State
+    // Sudut jarum: -90° (0 KM/H, kiri) s/d +90° (180 KM/H, kanan)
+    this.currentAngle = -90;
+    this.currentSpeed = 0; // 0 - 180 KM/H
+    this.peakSpeed = 0;
+    this.odometerMileage = 18400; // Kilometrage dasar
+    this.lastTickSpeed = 0;
+
+    // Press & Hold State
+    this.isHolding = false;
+    this.holdStartTime = 0;
+    this.holdDuration = 0;
+    this.minHoldTime = 0.8; // detik minimal hold agar sah
+    this.maxHoldTime = 3.8; // detik maksimal hold (auto release)
+
+    // Deceleration & Prize Landing State
+    this.decelStartTime = 0;
+    this.decelDuration = 2200; // ms perlambatan suspensi
+    this.decelStartAngle = 0;
+    this.targetAngle = 0;
+    this.targetSpeed = 0;
+    this.activePrize = null;
+
+    // Loop & Timers
     this.loopRaf = null;
-
-    // Energi & Skor
-    this.energy = 0;           // 0 - 150%
-    this.score = 0;
-    this.multiplier = 1.0;
-    this.comboStreak = 0;
-    this.lastTapTime = 0;
-    this.maxEnergyReached = 0;
-    this.overchargeTime = 0;   // detik dalam overcharge (>=100%)
-
-    // Ketupat Splitting Mechanics & RNG Winning Ratios
-    // 10% Tier 1 (Terbelah 100%) - Ketupat sangat mudah dibelah
-    // 30% Tier 2 (Terbelah 70%)  - Ketupat sedang kerasnya
-    // 60% Tier 3 (Terbelah 30%)  - Ketupat sangat keras, sulit dibelah
-    this.splitPercent = 0;
-    this.roundTargetTier = 3;
-    // ketupatHardness: semakin tinggi = semakin keras = susah naik
-    // Tier 1 hardness rendah -> progress cepat naik
-    // Tier 2 hardness sedang -> progress naik sampai ~70
-    // Tier 3 hardness tinggi -> progress berhenti di ~30
-    this.ketupatHardness = 1.0;
-    // softCap: titik di mana resistensi mulai terasa kuat
-    this.softCap = 30;
-    // absoluteCap: batas fisik ketupat ini bisa terbelah
-    this.absoluteCap = 38;
-    this.roundTierTitle = 'Tier 3 (30%)';
-
-    // Statistik Tap & RPM
-    this.totalTaps = 0;
-    this.tapTimestamps = [];
-    this.peakRpm = 0; // Taps per detik tertinggi
-
-    // Sweet Spot Mechanic (Bulls-Eye Timing)
-    this.sweetSpotActive = false;
-    this.sweetSpotPosition = 0; // 0.0 - 1.0
-    this.sweetSpotSpeed = 1.8;
-    this.sweetSpotDirection = 1;
-
-    // Floating Bonus Can / Booster
-    this.booster = {
-      active: false,
-      x: 50,
-      y: 50,
-      vx: 2,
-      vy: 1.5,
-      type: 'can',
-      timer: null
-    };
+    this.lastLoopTime = 0;
 
     // DOM Elements Cache
     this.initDOMElements();
 
-    // Inisialisasi Particle System
+    // Particle System
     this.particles = new ParticleSystem(this.dom.canvas);
     this.particles.start();
 
-    // Pasang Event Listeners
+    // Bind Event Listeners
     this.bindEvents();
     this.updateLeaderboardDisplay();
   }
 
   initDOMElements() {
     this.dom = {
-      // Screens
+      // Screens & Overlays
       startScreen: document.getElementById('start-screen'),
       gameScreen: document.getElementById('game-screen'),
       gameOverScreen: document.getElementById('game-over-screen'),
       countdownOverlay: document.getElementById('countdown-overlay'),
       countdownText: document.getElementById('countdown-text'),
 
-      // Inputs & Controls
+      // Inputs & Buttons
       nameInput: document.getElementById('player-name-input'),
       startBtn: document.getElementById('btn-start-game'),
-      tapBtn: document.getElementById('btn-tap-energy'),
       restartBtn: document.getElementById('btn-play-again'),
       muteBtn: document.getElementById('btn-toggle-mute'),
       bgmBtn: document.getElementById('btn-toggle-bgm'),
@@ -101,68 +81,87 @@ class KratingdaengGame {
       scriptUrlInput: document.getElementById('appscript-url-input'),
       apiStatusMsg: document.getElementById('api-status-msg'),
 
-      // HUD & Game Displays
-      timerText: document.getElementById('hud-timer-text'),
-      timerBar: document.getElementById('hud-timer-bar'),
-      scoreText: document.getElementById('hud-score-text'),
-      multiplierBadge: document.getElementById('hud-multiplier-badge'),
-      rpmText: document.getElementById('hud-rpm-text'),
-      
-      // Ketupat Arena Elements
-      energyPercentText: document.getElementById('energy-percent-text'),
-      ketupatSplitStatus: document.getElementById('ketupat-split-status'),
-      ketupatProgressFill: document.getElementById('ketupat-progress-fill'),
-      ketupatStage: document.getElementById('ketupat-stage'),
-      ketupatLeft: document.getElementById('ketupat-half-left'),
-      ketupatRight: document.getElementById('ketupat-half-right'),
-      ketupatCore: document.getElementById('ketupat-inner-core'),
-      sweetSpotIndicator: document.getElementById('sweet-spot-indicator'),
-      sweetSpotZone: document.getElementById('sweet-spot-zone'),
+      // HUD
+      hudPlayerDisplay: document.getElementById('hud-player-display'),
+      hudLocationBadge: document.getElementById('hud-location-badge'),
+      hudGasStatus: document.getElementById('hud-gas-status'),
       overchargeBanner: document.getElementById('overcharge-banner'),
 
-      // Floating Booster
-      floatingBooster: document.getElementById('floating-booster'),
+      // Speedometer & Odometer Elements
+      needleGroup: document.getElementById('speedometer-needle-group'),
+      speedDigitalVal: document.getElementById('speed-digital-val'),
+      odoDigits: [
+        document.getElementById('odo-d1'),
+        document.getElementById('odo-d2'),
+        document.getElementById('odo-d3'),
+        document.getElementById('odo-d4'),
+        document.getElementById('odo-d5')
+      ],
+      liveZoneStatus: document.getElementById('live-zone-status'),
 
-      // Canvas
-      canvas: document.getElementById('fx-canvas'),
+      // Press & Hold Controls
+      holdChargeBar: document.getElementById('hold-charge-bar'),
+      holdDurationText: document.getElementById('hold-duration-text'),
+      holdStatusInstruction: document.getElementById('hold-status-instruction'),
+      holdPedalBtn: document.getElementById('btn-hold-gas'),
+      pedalBtnTitle: document.getElementById('pedal-btn-title'),
+      pedalBtnSubtitle: document.getElementById('pedal-btn-subtitle'),
 
-      // Result Displays
-      finalSplit: document.getElementById('res-final-split'),
-      finalScore: document.getElementById('res-final-score'),
-      finalTier: document.getElementById('res-tier-badge'),
-      finalTierDesc: document.getElementById('res-tier-desc'),
-      finalTaps: document.getElementById('res-total-taps'),
-      finalRpm: document.getElementById('res-peak-rpm'),
-      finalOvercharge: document.getElementById('res-overcharge-pct'),
+      // Result Elements
+      resPrizeIconBox: document.getElementById('res-prize-icon-box'),
+      resPrizeName: document.getElementById('res-prize-name'),
+      resTierBadge: document.getElementById('res-tier-badge'),
+      resTierDesc: document.getElementById('res-tier-desc'),
+      resFinalSpeed: document.getElementById('res-final-speed'),
+      resHoldTime: document.getElementById('res-hold-time'),
+      resBoothLoc: document.getElementById('res-booth-loc'),
       sheetSyncStatus: document.getElementById('sheet-sync-status'),
       certLinkContainer: document.getElementById('cert-link-container'),
       certLinkBtn: document.getElementById('btn-view-cert'),
       leaderboardBody: document.getElementById('leaderboard-rows'),
       refreshLbBtn: document.getElementById('btn-refresh-leaderboard'),
-      shareBtn: document.getElementById('btn-share-result')
+      shareBtn: document.getElementById('btn-share-result'),
+
+      // Dynamic chip di start screen
+      tier2DynamicItem: document.getElementById('tier2-dynamic-item'),
+
+      // Canvas
+      canvas: document.getElementById('fx-canvas')
     };
 
-    // Set initial value URL Apps Script jika tersimpan
     if (this.dom.scriptUrlInput) {
       this.dom.scriptUrlInput.value = window.apiService.getScriptUrl();
     }
   }
 
   bindEvents() {
-    // Tombol Mulai
-    this.dom.startBtn.addEventListener('click', () => {
-      this.initAudioAndStart();
-    });
+    // Tombol Mulai Game
+    this.dom.startBtn.addEventListener('click', () => this.initAudioAndStart());
 
-    // Enter di input nama langsung mulai
     this.dom.nameInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') this.initAudioAndStart();
     });
 
-    // Tombol Main Lagi
-    this.dom.restartBtn.addEventListener('click', () => {
-      this.showStartScreen();
+    // Pemilihan Lokasi Booth (Rest Area vs Pelabuhan)
+    document.querySelectorAll('.location-pill').forEach(pill => {
+      pill.addEventListener('click', () => {
+        document.querySelectorAll('.location-pill').forEach(p => p.classList.remove('selected'));
+        pill.classList.add('selected');
+        this.location = pill.dataset.location || 'RA';
+        
+        // Update label dynamic item pada kartu Tier 2 di start screen
+        if (this.dom.tier2DynamicItem) {
+          if (this.location === 'RA') {
+            this.dom.tier2DynamicItem.textContent = 'Tongkat Tol (Khusus RA)';
+          } else {
+            this.dom.tier2DynamicItem.textContent = 'Cover Tas (Khusus Pelabuhan)';
+          }
+        }
+      });
     });
+
+    // Tombol Main Lagi
+    this.dom.restartBtn.addEventListener('click', () => this.showStartScreen());
 
     // Audio & Mute Controls
     this.dom.muteBtn.addEventListener('click', () => {
@@ -186,7 +185,7 @@ class KratingdaengGame {
       }
     });
 
-    // Pengaturan Modal
+    // Pengaturan Modal Google Sheet
     this.dom.settingsBtn.addEventListener('click', () => {
       this.dom.scriptUrlInput.value = window.apiService.getScriptUrl();
       this.dom.apiStatusMsg.textContent = '';
@@ -215,64 +214,69 @@ class KratingdaengGame {
       this.dom.apiStatusMsg.style.color = res.success ? '#10b981' : '#ef4444';
     });
 
-    // Refresh Leaderboard Button
     if (this.dom.refreshLbBtn) {
       this.dom.refreshLbBtn.addEventListener('click', () => this.updateLeaderboardDisplay());
     }
 
-    // Share Score Button
     if (this.dom.shareBtn) {
       this.dom.shareBtn.addEventListener('click', () => this.shareScore());
     }
 
-    // --- INTERAKSI TAP / MASHING ENERGI ---
-    // Multi-touch friendly: prevent default zoom & scroll pada tombol energi
-    const handleTap = (e) => {
+    // =========================================================================
+    // MEKANIK INTERAKSI: PRESS & HOLD PEDAL GAS (MOUSE, TOUCH, KEYBOARD)
+    // =========================================================================
+    const onHoldStart = (e) => {
       if (e) {
         e.preventDefault();
         e.stopPropagation();
       }
-      if (this.state === 'PLAYING') {
-        const rect = this.dom.tapBtn.getBoundingClientRect();
-        const clientX = e && e.touches && e.touches[0] ? e.touches[0].clientX : (e ? e.clientX : rect.left + rect.width / 2);
-        const clientY = e && e.touches && e.touches[0] ? e.touches[0].clientY : (e ? e.clientY : rect.top + rect.height / 2);
-        this.triggerEnergyTap(clientX, clientY);
-      }
+      this.startHolding();
     };
 
-    this.dom.tapBtn.addEventListener('touchstart', handleTap, { passive: false });
-    this.dom.tapBtn.addEventListener('mousedown', handleTap);
+    const onHoldEnd = (e) => {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      this.stopHolding();
+    };
 
-    // Keyboard support: Spacebar, Enter, ArrowUp
+    // Pointer & Touch Events pada tombol pedal
+    this.dom.holdPedalBtn.addEventListener('pointerdown', onHoldStart);
+    this.dom.holdPedalBtn.addEventListener('pointerup', onHoldEnd);
+    this.dom.holdPedalBtn.addEventListener('pointercancel', onHoldEnd);
+    this.dom.holdPedalBtn.addEventListener('mouseleave', () => {
+      if (this.isHolding) this.stopHolding();
+    });
+
+    // Touch events fallback
+    this.dom.holdPedalBtn.addEventListener('touchstart', onHoldStart, { passive: false });
+    this.dom.holdPedalBtn.addEventListener('touchend', onHoldEnd, { passive: false });
+
+    // Keyboard Space / Enter hold support
     window.addEventListener('keydown', (e) => {
       if (this.state === 'PLAYING' && (e.code === 'Space' || e.code === 'Enter' || e.code === 'ArrowUp')) {
-        e.preventDefault();
-        const rect = this.dom.tapBtn.getBoundingClientRect();
-        this.triggerEnergyTap(rect.left + rect.width / 2, rect.top + rect.height / 2);
+        if (!e.repeat && !this.isHolding) {
+          e.preventDefault();
+          this.startHolding();
+        }
       }
     });
 
-    // Floating Booster Click/Tap
-    this.dom.floatingBooster.addEventListener('pointerdown', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      this.claimBooster(e.clientX, e.clientY);
-    });
-
-    // Durasi Selector Buttons
-    document.querySelectorAll('.duration-pill').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        document.querySelectorAll('.duration-pill').forEach(b => b.classList.remove('selected'));
-        btn.classList.add('selected');
-        this.duration = parseInt(btn.dataset.duration, 10) || 15;
-      });
+    window.addEventListener('keyup', (e) => {
+      if (this.state === 'PLAYING' && (e.code === 'Space' || e.code === 'Enter' || e.code === 'ArrowUp')) {
+        if (this.isHolding) {
+          e.preventDefault();
+          this.stopHolding();
+        }
+      }
     });
   }
 
   initAudioAndStart() {
     window.soundSystem.ensureContext();
     const name = this.dom.nameInput.value.trim();
-    this.playerName = name ? name : 'Banteng Juara';
+    this.playerName = name ? name : 'Jagoan Kratingdaeng';
     this.startCountdown();
   }
 
@@ -299,11 +303,11 @@ class KratingdaengGame {
       if (count > 0) {
         this.dom.countdownText.textContent = count;
         this.dom.countdownText.classList.remove('pop');
-        void this.dom.countdownText.offsetWidth; // trigger reflow
+        void this.dom.countdownText.offsetWidth;
         this.dom.countdownText.classList.add('pop');
         window.soundSystem.playCountdown(false);
       } else if (count === 0) {
-        this.dom.countdownText.textContent = 'SURGE!';
+        this.dom.countdownText.textContent = 'GAS!';
         this.dom.countdownText.style.color = '#ffd700';
         window.soundSystem.playCountdown(true);
       } else {
@@ -311,525 +315,496 @@ class KratingdaengGame {
         this.dom.countdownOverlay.classList.add('hidden');
         this.startMatch();
       }
-    }, 900);
+    }, 850);
   }
 
   startMatch() {
     this.state = 'PLAYING';
-    this.timeLeft = this.duration;
-    this.score = 0;
-    this.multiplier = 1.0;
-    this.comboStreak = 0;
-    this.totalTaps = 0;
-    this.tapTimestamps = [];
-    this.peakRpm = 0;
-    this.overchargeTime = 0;
+    this.isHolding = false;
+    this.holdDuration = 0;
+    this.peakSpeed = 0;
+    this.currentAngle = -90;
+    this.currentSpeed = 0;
+    this.lastTickSpeed = 0;
 
-    // Roll Target Tier & Cap sesuai rasio kemenangan (10% Tier 1, 30% Tier 2, 60% Tier 3)
-    this.rollRoundTier();
+    // Reset Visual Display
+    this.dom.hudPlayerDisplay.textContent = this.playerName;
+    this.dom.hudLocationBadge.textContent = this.location === 'RA' ? 'Rest Area (RA)' : 'Pelabuhan';
+    this.dom.hudGasStatus.textContent = 'SIAP GAS!';
+    this.dom.overchargeBanner.textContent = 'TEKAN & TAHAN PEDAL GAS UNTUK MEMUTAR JARUM!';
+    this.dom.holdChargeBar.style.width = '0%';
+    this.dom.holdDurationText.textContent = '0.0s';
+    this.dom.holdStatusInstruction.textContent = 'TAHAN PEDAL GAS UNTUK MEMUTAR JARUM';
+    this.dom.pedalBtnTitle.textContent = 'TEKAN & TAHAN';
+    this.dom.pedalBtnSubtitle.textContent = 'TAHAN PEDAL GAS (ATAU SPASI)';
+    this.dom.needleGroup.classList.remove('decelerating');
 
-    // Mulai background music jika belum jalan
+    this.updateSpeedometerVisual(-90, 0);
+
+    // Audio BGM
     window.soundSystem.startBGM();
     this.dom.bgmBtn.classList.add('active');
-    this.dom.bgmBtn.innerHTML = `<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg> <span>MUSIK ON</span>`;
 
-    // Timer Interval Game (per detik)
-    this.timerInterval = setInterval(() => {
-      this.timeLeft--;
-      this.updateTimerDisplay();
-
-      if (this.timeLeft <= 0) {
-        this.endMatch();
-      }
-    }, 1000);
-
-    // Booster Spawner Loop
-    this.scheduleNextBooster();
-
-    // Main Game Physics Loop (60 FPS)
+    // Physics RAF Loop
     this.lastLoopTime = performance.now();
-    this.loopRaf = requestAnimationFrame((t) => this.gameLoop(t));
-  }
-
-  rollRoundTier() {
-    // 1. 10% Tier 1 terbelah 100% - ketupat SANGAT lunak (hardness rendah)
-    // 2. 30% Tier 2 terbelah 70%  - ketupat SEDANG keras
-    // 3. 60% Tier 3 terbelah 30%  - ketupat SANGAT keras (hardness tinggi)
-    // Pemain tidak tahu tier-nya - mereka hanya merasa ketupat ini "mudah" atau "keras"
-    const rand = Math.random() * 100;
-    if (rand < 10) {
-      this.roundTargetTier = 1;
-      // Ketupat lunak: resistensi mulai di 90%, bisa tembus 100%
-      this.ketupatHardness = 0.18;   // rendah = naik cepat
-      this.softCap = 90;
-      this.absoluteCap = 103;        // bisa capai 100%
-      this.roundTierTitle = 'Tier 1 (100%)';
-    } else if (rand < 40) { // 10% + 30% = 40%
-      this.roundTargetTier = 2;
-      // Ketupat sedang: resistensi mulai di 60%, bisa tembus 70-78%
-      this.ketupatHardness = 0.52;
-      this.softCap = 60;
-      this.absoluteCap = 80;
-      this.roundTierTitle = 'Tier 2 (70%)';
-    } else { // 60% sisa
-      this.roundTargetTier = 3;
-      // Ketupat keras: resistensi mulai di 22%, bisa tembus 30-38%
-      this.ketupatHardness = 1.0;
-      this.softCap = 22;
-      this.absoluteCap = 40;
-      this.roundTierTitle = 'Tier 3 (30%)';
-    }
-
-    this.splitPercent = 0;
-    this.energy = 0;
-
-    // Bersihkan marker jika ada (untuk keamanan)
-    const m30 = document.querySelector('.milestone-marker.m-30');
-    const m70 = document.querySelector('.milestone-marker.m-70');
-    const m100 = document.querySelector('.milestone-marker.m-100');
-    if (m30) m30.classList.remove('achieved');
-    if (m70) m70.classList.remove('achieved');
-    if (m100) m100.classList.remove('achieved');
-  }
-
-  /**
-   * Main Physics & Animation Loop (60 FPS)
-   * Progress TIDAK ada hard cap - dikendalikan oleh resistensi fisika ketupat.
-   * Ketupat keras (Tier 3) → resistensi besar → susah naik → alami berhenti di ~30%
-   * Ketupat lunak (Tier 1) → resistensi kecil → mudah naik → bisa tembus 100%
-   */
-  gameLoop(currentTime) {
-    if (this.state !== 'PLAYING') return;
-
-    const dt = (currentTime - this.lastLoopTime) / 1000;
-    this.lastLoopTime = currentTime;
-
-    // 1. Idle Decay: belahan merapat kembali jika tidak ditap
-    // Laju decay tergantung seberapa jauh di atas softCap
-    const now = Date.now();
-    const idleMs = now - this.lastTapTime;
-    if (idleMs > 400) {
-      // Di bawah softCap: decay lambat (ketupat masih terbuka)
-      // Di atas softCap: decay lebih cepat (ketupat ingin kembali menutup)
-      const aboveSoftCap = Math.max(0, this.splitPercent - this.softCap);
-      const decayRate = 1.5 + (aboveSoftCap * this.ketupatHardness * 0.08);
-      this.splitPercent = Math.max(0, this.splitPercent - (decayRate * dt));
-    }
-
-    // 2. Hard physical floor: tidak bisa negatif
-    this.splitPercent = Math.max(0, Math.min(this.absoluteCap, this.splitPercent));
-    this.energy = this.splitPercent;
-
-    // 3. Combo Streak Decay
-    if (now - this.lastTapTime > 650 && this.comboStreak > 0) {
-      this.comboStreak = Math.max(0, this.comboStreak - Math.ceil(dt * 15));
-      this.calculateMultiplier();
-    }
-
-    // 4. Sweet Spot Oscillator
-    this.sweetSpotPosition += this.sweetSpotSpeed * this.sweetSpotDirection * dt;
-    if (this.sweetSpotPosition >= 1.0) {
-      this.sweetSpotPosition = 1.0;
-      this.sweetSpotDirection = -1;
-    } else if (this.sweetSpotPosition <= 0) {
-      this.sweetSpotPosition = 0;
-      this.sweetSpotDirection = 1;
-    }
-    this.sweetSpotActive = (this.sweetSpotPosition >= 0.68 && this.sweetSpotPosition <= 0.86);
-
-    // 5. Dynamic Banner — berdasarkan posisi progress, bukan tier
-    if (this.splitPercent >= 95) {
-      this.dom.overchargeBanner.textContent = 'TERBELAH SEMPURNA! LUAR BIASA!';
-      this.dom.overchargeBanner.classList.remove('hidden');
-    } else if (this.splitPercent >= 65) {
-      this.dom.overchargeBanner.textContent = 'BELAHAN MENGANGA LEBAR! TERUS KETUK!';
-      this.dom.overchargeBanner.classList.remove('hidden');
-    } else if (this.splitPercent >= 28) {
-      this.dom.overchargeBanner.textContent = 'KETUPAT MULAI TERBELAH! JANGAN BERHENTI!';
-      this.dom.overchargeBanner.classList.remove('hidden');
-    } else {
-      this.dom.overchargeBanner.classList.add('hidden');
-    }
-
-    // 6. Update Floating Booster
-    this.updateBooster(dt);
-
-    // 7. Update Visual
-    this.updateVisualMeters();
-
-    this.loopRaf = requestAnimationFrame((t) => this.gameLoop(t));
-  }
-
-  /**
-   * Pemain menekan tombol Tap / Spacebar (Ketuk Ketupat)
-   * Fisika Resistensi: gain per tap dikurangi secara eksponensial
-   * semakin mendekati absoluteCap ketupat ini.
-   */
-  triggerEnergyTap(clientX, clientY) {
-    const now = Date.now();
-    this.lastTapTime = now;
-    this.totalTaps++;
-
-    // Hitung Realtime Taps/detik
-    this.tapTimestamps.push(now);
-    const oneSecAgo = now - 1000;
-    this.tapTimestamps = this.tapTimestamps.filter(t => t > oneSecAgo);
-    const currentRpm = this.tapTimestamps.length;
-    if (currentRpm > this.peakRpm) this.peakRpm = currentRpm;
-
-    // Cek Sweet Spot
-    const isCrit = this.sweetSpotActive;
-    const baseGain = isCrit ? 2.8 : 1.4;
-    let points = isCrit ? 150 : 50;
-
-    // ── FISIKA RESISTENSI KETUPAT ──
-    // Di bawah softCap: gain penuh
-    // Di antara softCap → absoluteCap: gain menyusut eksponensial (ketupat melawan)
-    // Di absoluteCap: hampir tidak bergerak (fisik tidak bisa dibelah lebih)
-    let effectiveGain;
-    if (this.splitPercent < this.softCap) {
-      // Fase bebas: ketupat belum terasa melawan
-      effectiveGain = baseGain;
-    } else {
-      // Fase resistensi: semakin dekat absoluteCap, semakin kecil gain
-      const resistanceRange = this.absoluteCap - this.softCap;
-      const progress = Math.min(1, (this.splitPercent - this.softCap) / resistanceRange);
-      // Fungsi eksponensial: gain * (1 - progress)^(2 * hardness)
-      const resistanceFactor = Math.pow(1 - progress, 2 * this.ketupatHardness + 0.5);
-      effectiveGain = baseGain * resistanceFactor;
-      // Minimal micro-bounce agar tidak terasa mati total
-      effectiveGain = Math.max(effectiveGain, 0.05);
-    }
-
-    // Update Combo
-    this.comboStreak++;
-    this.calculateMultiplier();
-
-    // Poin
-    const earnedScore = Math.round(points * this.multiplier);
-    this.score += earnedScore;
-
-    // Tambah progress (tanpa hard clamp — dibatasi hanya oleh absoluteCap)
-    this.splitPercent = Math.min(this.absoluteCap, this.splitPercent + effectiveGain);
-    this.energy = this.splitPercent;
-
-    // Efek Getaran Fisik Ketupat
-    if (this.dom.ketupatStage) {
-      this.dom.ketupatStage.classList.remove('hit-recoil');
-      void this.dom.ketupatStage.offsetWidth;
-      this.dom.ketupatStage.classList.add('hit-recoil');
-    }
-
-    // Audio & Partikel
-    if (isCrit) {
-      window.soundSystem.playSweetSpot();
-      this.particles.createSparks(clientX, clientY, 20, true);
-      this.particles.addFloatingText(`CRITICAL x${this.multiplier.toFixed(1)}!`, clientX, clientY - 30, '#ffd700', true);
-      this.triggerScreenShake(8);
-    } else {
-      window.soundSystem.playTap(this.splitPercent);
-      this.particles.createSparks(clientX, clientY, 10, false);
-      this.particles.addFloatingText(`+${earnedScore}`, clientX, clientY - 20, '#ffffff', false);
-      this.triggerScreenShake(3);
-    }
-
-    // Tombol Animation Feedback
-    this.dom.tapBtn.classList.remove('tap-pulse');
-    void this.dom.tapBtn.offsetWidth;
-    this.dom.tapBtn.classList.add('tap-pulse');
-  }
-
-  calculateMultiplier() {
-    if (this.comboStreak >= 35) {
-      this.multiplier = 4.0;
-    } else if (this.comboStreak >= 20) {
-      this.multiplier = 3.0;
-    } else if (this.comboStreak >= 10) {
-      this.multiplier = 2.0;
-    } else if (this.comboStreak >= 5) {
-      this.multiplier = 1.5;
-    } else {
-      this.multiplier = 1.0;
-    }
-  }
-
-  /**
-   * Floating Booster (Kaleng Emas / Petir Kratingdaeng)
-   */
-  scheduleNextBooster() {
-    if (this.state !== 'PLAYING') return;
-    const delay = Math.random() * 4000 + 3500; // setiap 3.5 - 7.5 detik
-
-    this.booster.timer = setTimeout(() => {
-      if (this.state !== 'PLAYING') return;
-      this.spawnBooster();
-    }, delay);
-  }
-
-  spawnBooster() {
-    this.booster.active = true;
-    this.booster.type = Math.random() > 0.5 ? 'can' : 'lightning';
-    this.booster.x = Math.random() * (window.innerWidth - 120) + 60;
-    this.booster.y = Math.random() * (window.innerHeight - 300) + 100;
-    this.booster.vx = (Math.random() * 3 + 1.5) * (Math.random() > 0.5 ? 1 : -1);
-    this.booster.vy = (Math.random() * 2 + 1) * (Math.random() > 0.5 ? 1 : -1);
-
-    this.dom.floatingBooster.className = `floating-booster ${this.booster.type}`;
-    this.dom.floatingBooster.innerHTML = this.booster.type === 'can' 
-      ? '<span class="booster-label">+500 ENERGI</span>' 
-      : '<span class="booster-label">MEGA BOOST</span>';
-    this.dom.floatingBooster.style.display = 'flex';
-
-    // Hilang otomatis dalam 3.2 detik jika tidak diklik
-    setTimeout(() => {
-      if (this.booster.active) {
-        this.dismissBooster();
-      }
-    }, 3200);
-  }
-
-  updateBooster(dt) {
-    if (!this.booster.active) return;
-    this.booster.x += this.booster.vx * 60 * dt;
-    this.booster.y += this.booster.vy * 60 * dt;
-
-    // Bounce off walls
-    if (this.booster.x <= 20 || this.booster.x >= window.innerWidth - 100) this.booster.vx *= -1;
-    if (this.booster.y <= 80 || this.booster.y >= window.innerHeight - 150) this.booster.vy *= -1;
-
-    this.dom.floatingBooster.style.left = `${this.booster.x}px`;
-    this.dom.floatingBooster.style.top = `${this.booster.y}px`;
-  }
-
-  claimBooster(clientX, clientY) {
-    if (!this.booster.active) return;
-    this.booster.active = false;
-    this.dom.floatingBooster.style.display = 'none';
-
-    // Reward
-    this.energy = Math.min(150, this.energy + 25);
-    const bonusScore = 500 * this.multiplier;
-    this.score += bonusScore;
-
-    window.soundSystem.playPowerUp();
-    this.particles.createSparks(clientX, clientY, 35, true);
-    this.particles.addFloatingText(`+${bonusScore} BONUS SURGE!`, clientX, clientY - 40, '#ffd700', true);
-
-    this.scheduleNextBooster();
-  }
-
-  dismissBooster() {
-    this.booster.active = false;
-    this.dom.floatingBooster.style.display = 'none';
-    this.scheduleNextBooster();
-  }
-
-  /**
-   * Update Tampilan Visual (Ketupat Progress, Pemisahan Belahan Ketupat, Core Reveal, HUD)
-   */
-  updateVisualMeters() {
-    const displaySplit = Math.round(this.splitPercent);
-    if (this.dom.energyPercentText) {
-      this.dom.energyPercentText.textContent = `${displaySplit}%`;
-    }
-
-    // 1. Progress Bar Fill
-    if (this.dom.ketupatProgressFill) {
-      this.dom.ketupatProgressFill.style.width = `${displaySplit}%`;
-    }
-
-    // 2. Status Label Teks — berdasarkan posisi progress, bukan tier
-    if (this.dom.ketupatSplitStatus) {
-      if (displaySplit >= 95) {
-        this.dom.ketupatSplitStatus.textContent = 'TERBELAH SEMPURNA';
-        this.dom.ketupatSplitStatus.style.color = '#ffd700';
-      } else if (displaySplit >= 65) {
-        this.dom.ketupatSplitStatus.textContent = 'BELAHAN MENGANGA LEBAR';
-        this.dom.ketupatSplitStatus.style.color = '#00e5ff';
-      } else if (displaySplit >= 40) {
-        this.dom.ketupatSplitStatus.textContent = 'TERBELAH SEDANG';
-        this.dom.ketupatSplitStatus.style.color = '#8bc34a';
-      } else if (displaySplit >= 20) {
-        this.dom.ketupatSplitStatus.textContent = 'MULAI RETAK';
-        this.dom.ketupatSplitStatus.style.color = '#ffa726';
-      } else if (displaySplit >= 5) {
-        this.dom.ketupatSplitStatus.textContent = 'HAMPIR RETAK';
-        this.dom.ketupatSplitStatus.style.color = '#ef9a9a';
-      } else {
-        this.dom.ketupatSplitStatus.textContent = 'UTUH';
-        this.dom.ketupatSplitStatus.style.color = '#cbd5e1';
-      }
-    }
-
-    // 3. Pemisahan Fisik Kedua Belahan Ketupat (Transform Left & Right)
-    // 0% = 0px, 100% = 85px separasi & 16 derajat rotasi
-    const separation = (this.splitPercent / 100) * 85;
-    const rotation = (this.splitPercent / 100) * 16;
-    if (this.dom.ketupatLeft && this.dom.ketupatRight) {
-      this.dom.ketupatLeft.style.transform = `translateX(-${separation}px) rotate(-${rotation}deg)`;
-      this.dom.ketupatRight.style.transform = `translateX(${separation}px) rotate(${rotation}deg)`;
-    }
-
-    // 4. Inti Hadiah / Logo Kratingdaeng di dalam Ketupat
-    if (this.dom.ketupatCore) {
-      if (this.splitPercent >= 20) {
-        const scale = 0.6 + (this.splitPercent / 100) * 0.55;
-        const opacity = Math.min(1, (this.splitPercent - 15) / 45);
-        this.dom.ketupatCore.style.opacity = opacity;
-        this.dom.ketupatCore.style.transform = `translate(-50%, -50%) scale(${scale})`;
-      } else {
-        this.dom.ketupatCore.style.opacity = '0';
-        this.dom.ketupatCore.style.transform = 'translate(-50%, -50%) scale(0.6)';
-      }
-    }
-
-    // 5. Sweet Spot Indicator
-    const indicatorPct = this.sweetSpotPosition * 100;
-    this.dom.sweetSpotIndicator.style.left = `${indicatorPct}%`;
-    this.dom.sweetSpotIndicator.classList.toggle('active', this.sweetSpotActive);
-
-    // 6. HUD Text
-    this.dom.scoreText.textContent = this.score.toLocaleString('id-ID');
-    this.dom.multiplierBadge.textContent = `${this.multiplier.toFixed(1)}x`;
-    this.dom.multiplierBadge.className = `multiplier-badge mult-${this.multiplier.toFixed(1).replace('.', '-')}`;
-    this.dom.rpmText.textContent = this.tapTimestamps.length;
-  }
-
-  updateTimerDisplay() {
-    this.dom.timerText.textContent = `${this.timeLeft}s`;
-    const pct = (this.timeLeft / this.duration) * 100;
-    this.dom.timerBar.style.width = `${pct}%`;
-
-    if (this.timeLeft <= 5) {
-      this.dom.timerBar.classList.add('urgent');
-      window.soundSystem.playCountdown(false);
-    }
-  }
-
-  triggerScreenShake(intensity = 5) {
-    const mainWrap = document.getElementById('app-container');
-    mainWrap.style.transform = `translate(${(Math.random() - 0.5) * intensity}px, ${(Math.random() - 0.5) * intensity}px)`;
-    setTimeout(() => {
-      mainWrap.style.transform = 'translate(0, 0)';
-    }, 45);
-  }
-
-  /**
-   * Akhir Pertandingan (Game Over & Victory)
-   */
-  async endMatch() {
-    this.state = 'GAMEOVER';
-    clearInterval(this.timerInterval);
-    if (this.booster.timer) clearTimeout(this.booster.timer);
     if (this.loopRaf) cancelAnimationFrame(this.loopRaf);
-    this.dom.floatingBooster.style.display = 'none';
-
-    window.soundSystem.stopBGM();
-    window.soundSystem.playVictory();
-
-    // Hitung Gelar Stamina & Hasil Belahan Ketupat
-    const tierInfo = this.determineTier();
-
-    // Tampilkan Data di Layar Hasil
-    this.dom.finalScore.textContent = this.score.toLocaleString('id-ID');
-    this.dom.finalTier.textContent = tierInfo.tier;
-    this.dom.finalTier.className = `tier-badge ${tierInfo.badgeClass}`;
-    if (this.dom.finalSplit) {
-      this.dom.finalSplit.textContent = `KETUPAT TERBELAH ${Math.round(this.splitPercent)}%`;
-    }
-    if (this.dom.finalTierDesc) {
-      this.dom.finalTierDesc.textContent = tierInfo.desc;
-    }
-    this.dom.finalTaps.textContent = this.totalTaps;
-    this.dom.finalRpm.textContent = `${this.peakRpm} taps/s`;
-    this.dom.finalOvercharge.textContent = `${Math.round(this.splitPercent)}%`;
-
-    this.dom.gameScreen.classList.add('hidden');
-    this.dom.gameOverScreen.classList.remove('hidden');
-
-    // Ledakan Confetti
-    this.particles.createOverchargeExplosion();
-
-    // Simpan ke Google Sheet & Google Drive
-    await this.syncScoreToBackend(tierInfo.tier);
+    this.loopRaf = requestAnimationFrame((t) => this.gameLoop(t));
   }
 
-  determineTier() {
-    const split = Math.round(this.splitPercent);
-    if (split >= 95) {
+  // =========================================================================
+  // LOGIKA PRESS & HOLD PEDAL GAS
+  // =========================================================================
+  startHolding() {
+    if (this.state !== 'PLAYING' || this.isHolding) return;
+
+    this.isHolding = true;
+    this.holdStartTime = performance.now();
+    this.holdDuration = 0;
+
+    this.dom.holdPedalBtn.classList.add('pressing');
+    this.dom.hudGasStatus.textContent = 'GAS POL!';
+    this.dom.hudGasStatus.style.color = '#ff1744';
+    this.dom.pedalBtnTitle.textContent = 'GAS AKTIF!';
+    this.dom.pedalBtnSubtitle.textContent = 'TERUS TAHAN HINGGA PUTARAN PENUH...';
+    this.dom.overchargeBanner.textContent = 'JARUM SPEEDOMETER BERPUTAR KENCANG 180°!';
+    this.dom.needleGroup.classList.remove('decelerating');
+
+    // Mulai deru mesin
+    window.soundSystem.startEngineRev();
+  }
+
+  stopHolding() {
+    if (!this.isHolding || this.state !== 'PLAYING') return;
+
+    this.isHolding = false;
+    this.dom.holdPedalBtn.classList.remove('pressing');
+    window.soundSystem.stopEngineRev();
+
+    // Cek apakah pemain menahan cukup lama (minimal 0.8 detik)
+    if (this.holdDuration < this.minHoldTime) {
+      this.dom.overchargeBanner.textContent = 'TAHAN PEDAL LEBIH LAMA AGAR JARUM BERPUTAR PENUH!';
+      this.dom.holdStatusInstruction.textContent = 'TEKAN & TAHAN MINIMAL 1 DETIK!';
+      this.dom.hudGasStatus.textContent = 'KURANG LAMA!';
+      this.dom.hudGasStatus.style.color = '#f59e0b';
+      this.dom.pedalBtnTitle.textContent = 'TEKAN & TAHAN';
+      this.dom.pedalBtnSubtitle.textContent = 'COBA LAGI, TAHAN LEBIH LAMA';
+
+      // Kembalikan jarum ke posisi 0 km/h secara halus
+      this.currentAngle = -90;
+      this.currentSpeed = 0;
+      this.updateSpeedometerVisual(-90, 0);
+      return;
+    }
+
+    // Jika sudah cukup lama, KUNCI HADIAH LUCKY DIP & MULAI PERLAMBATAN
+    this.beginDecelerationToPrize();
+  }
+
+  // =========================================================================
+  // RASIO KEBERUNTUNGAN LUCKY DIP (TIER 1 10%, TIER 2 30%, TIER 3 60%)
+  // =========================================================================
+  rollLuckyDipPrize() {
+    const rand = Math.random() * 100;
+
+    // 1. TIER 1 — 10%: Kaos dan Topi (1:1)
+    if (rand < 10) {
+      const subRand = Math.random();
+      const prizeItem = subRand < 0.5 ? 'Kaos Eksklusif Kratingdaeng' : 'Topi Kratingdaeng';
+      const prizeType = subRand < 0.5 ? 'tshirt' : 'cap';
+      // Jarum mendarat di zona merah (162 - 180 KM/H, sudut +72° s/d +90°)
+      const targetSpeed = 164 + Math.random() * 14; // 164 - 178 KM/H
+      const targetAngle = ((targetSpeed / 180) * 180) - 90; // +74° s/d +88°
+
       return {
-        tier: 'Tier 1: Terbelah 100%',
+        tier: 1,
+        tierName: 'Tier 1 (10%)',
+        prizeName: prizeItem,
+        prizeType: prizeType,
+        targetSpeed: Math.round(targetSpeed),
+        targetAngle: targetAngle,
         badgeClass: 'tier-1',
-        desc: `Luar Biasa! Ketupat Terbelah Sempurna ${split}%! Pemenang Hadiah Utama!`
-      };
-    } else if (split >= 65) {
-      return {
-        tier: 'Tier 2: Terbelah 70%',
-        badgeClass: 'tier-2',
-        desc: `Hebat! Ketupat Berhasil Terbelah ${split}%! Pukulan Anda Sangat Bertenaga!`
-      };
-    } else if (split >= 25) {
-      return {
-        tier: 'Tier 3: Terbelah 30%',
-        badgeClass: 'tier-3',
-        desc: `Bagus! Ketupat Terbelah ${split}%! Stamina Pejuang Terbukti!`
+        desc: 'Luar Biasa! Pemenang Hadiah Utama Tier 1 Kratingdaeng!'
       };
     }
+
+    // 2. TIER 2 — 30%: Payung Lipat, Jas Hujan, Tongkat Tol (RA) / Cover Tas (Pelabuhan) (2:3:4)
+    if (rand < 40) { // 10% + 30% = 40%
+      const subWeight = Math.random() * 9; // Total bobot = 2 + 3 + 4 = 9
+      let prizeItem = '';
+      let prizeType = '';
+
+      if (subWeight < 2) {
+        // Bobot 2: Payung Lipat
+        prizeItem = 'Payung Lipat Kratingdaeng';
+        prizeType = 'umbrella';
+      } else if (subWeight < 5) {
+        // Bobot 3: Jas Hujan
+        prizeItem = 'Jas Hujan Kratingdaeng';
+        prizeType = 'raincoat';
+      } else {
+        // Bobot 4: Tongkat Tol khusus RA / Cover Tas khusus pelabuhan
+        if (this.location === 'RA') {
+          prizeItem = 'Tongkat Tol Kratingdaeng (Khusus RA)';
+          prizeType = 'tolstick';
+        } else {
+          prizeItem = 'Cover Tas Kratingdaeng (Khusus Pelabuhan)';
+          prizeType = 'bagcover';
+        }
+      }
+
+      // Jarum mendarat di zona biru (108 - 162 KM/H, sudut +18° s/d +72°)
+      const targetSpeed = 112 + Math.random() * 46; // 112 - 158 KM/H
+      const targetAngle = ((targetSpeed / 180) * 180) - 90; // +22° s/d +68°
+
+      return {
+        tier: 2,
+        tierName: 'Tier 2 (30%)',
+        prizeName: prizeItem,
+        prizeType: prizeType,
+        targetSpeed: Math.round(targetSpeed),
+        targetAngle: targetAngle,
+        badgeClass: 'tier-2',
+        desc: 'Hebat! Anda berhasil memenangkan Hadiah Menarik Tier 2!'
+      };
+    }
+
+    // 3. TIER 3 — 60%: Shopping Bag saja (100% dari Tier 3)
+    const targetSpeed = 20 + Math.random() * 82; // 20 - 102 KM/H
+    const targetAngle = ((targetSpeed / 180) * 180) - 90; // -70° s/d +12°
+
     return {
-      tier: 'Stamina Pemula',
-      badgeClass: 'tier-starter',
-      desc: `Ketupat baru retak ${split}%. Ketuk lebih cepat — ayo coba lagi!`
+      tier: 3,
+      tierName: 'Tier 3 (60%)',
+      prizeName: 'Shopping Bag Kratingdaeng',
+      prizeType: 'shoppingbag',
+      targetSpeed: Math.round(targetSpeed),
+      targetAngle: targetAngle,
+      badgeClass: 'tier-3',
+      desc: 'Bagus! Anda mendapatkan Shopping Bag Eksklusif Kratingdaeng!'
     };
   }
 
-  async syncScoreToBackend(tier) {
+  beginDecelerationToPrize() {
+    this.state = 'DECELERATING';
+    this.activePrize = this.rollLuckyDipPrize();
+    this.decelStartTime = performance.now();
+    this.decelStartAngle = this.currentAngle;
+    this.targetAngle = this.activePrize.targetAngle;
+    this.targetSpeed = this.activePrize.targetSpeed;
+
+    this.dom.hudGasStatus.textContent = 'MENGUNCI...';
+    this.dom.hudGasStatus.style.color = '#ffd700';
+    this.dom.overchargeBanner.textContent = 'JARUM MELAMBAT... MENCARI TARGET HADIAH LUCKY DIP!';
+    this.dom.pedalBtnTitle.textContent = 'MENGUNCI...';
+    this.dom.pedalBtnSubtitle.textContent = 'JARUM SEDANG MENDARAT DI TARGET';
+    this.dom.needleGroup.classList.add('decelerating');
+  }
+
+  // =========================================================================
+  // MAIN PHYSICS LOOP (60 FPS)
+  // =========================================================================
+  gameLoop(currentTime) {
+    if (this.state !== 'PLAYING' && this.state !== 'DECELERATING') return;
+
+    const dt = Math.min(0.1, (currentTime - this.lastLoopTime) / 1000);
+    this.lastLoopTime = currentTime;
+
+    // FASE 1: PEMAIN SEDANG TEKAN & TAHAN GAS (HOLDING)
+    if (this.isHolding && this.state === 'PLAYING') {
+      this.holdDuration += dt;
+
+      // Update Charge Bar
+      const chargePct = Math.min(100, (this.holdDuration / 2.0) * 100);
+      this.dom.holdChargeBar.style.width = `${chargePct}%`;
+      this.dom.holdDurationText.textContent = `${this.holdDuration.toFixed(1)}s`;
+
+      // Jarum berputar 180 derajat secara dinamis & acak
+      const t = currentTime / 1000;
+      // Perpaduan gelombang frekuensi tinggi untuk getaran dan ayunan 180° penuh
+      const swing = Math.sin(t * 12) * 58 + Math.sin(t * 24) * 24 + (Math.random() - 0.5) * 16;
+      this.currentAngle = Math.max(-90, Math.min(90, swing));
+      this.currentSpeed = Math.round(((this.currentAngle + 90) / 180) * 180);
+
+      if (this.currentSpeed > this.peakSpeed) {
+        this.peakSpeed = this.currentSpeed;
+      }
+
+      // Odometer Digital bertambah cepat (efek putaran roda berkecepatan tinggi)
+      if (Math.random() > 0.4) {
+        this.odometerMileage += Math.floor(Math.random() * 3) + 1;
+      }
+
+      // Suara deru mesin naik seiring kecepatan
+      window.soundSystem.updateEngineRev(this.currentSpeed / 180);
+
+      // Partikel percikan dari ujung jarum
+      if (Math.random() > 0.4) {
+        this.emitNeedleSparks();
+      }
+
+      // Banner teks interaktif saat putaran sudah matang
+      if (this.holdDuration >= 1.2) {
+        this.dom.holdStatusInstruction.textContent = 'PUTARAN MAKSIMAL! LEPASKAN UNTUK KUNCI HADIAH!';
+        this.dom.pedalBtnSubtitle.textContent = 'LEPASKAN SEKARANG UNTUK MENGUNCI!';
+      }
+
+      // Auto-trigger release jika pemain menahan terlalu lama (3.8s)
+      if (this.holdDuration >= this.maxHoldTime) {
+        this.stopHolding();
+      }
+
+      this.updateSpeedometerVisual(this.currentAngle, this.currentSpeed);
+    }
+
+    // FASE 2: PERLAMBATAN DRAMATIS (DECELERATION SUSPENSE)
+    else if (this.state === 'DECELERATING') {
+      const elapsed = currentTime - this.decelStartTime;
+      const progress = Math.min(1.0, elapsed / this.decelDuration);
+
+      // Easing Cubic Out yang mulus dengan sedikit goyangan inersia (spring settling)
+      const ease = 1 - Math.pow(1 - progress, 3);
+      const remainingProgress = 1 - progress;
+      const wobble = Math.sin(progress * Math.PI * 4) * (remainingProgress * 14);
+
+      this.currentAngle = this.decelStartAngle + ((this.targetAngle - this.decelStartAngle) * ease) + wobble;
+      this.currentSpeed = Math.round(((this.currentAngle + 90) / 180) * 180);
+
+      // Bunyi Tik Jarum saat melintasi batas speed
+      if (Math.abs(this.currentSpeed - this.lastTickSpeed) >= 15) {
+        window.soundSystem.playNeedleTick(0.8 + (this.currentSpeed / 180) * 0.6);
+        this.lastTickSpeed = this.currentSpeed;
+      }
+
+      this.updateSpeedometerVisual(this.currentAngle, this.currentSpeed);
+
+      // Selesai mendarat di target
+      if (progress >= 1.0) {
+        this.currentAngle = this.targetAngle;
+        this.currentSpeed = this.targetSpeed;
+        this.updateSpeedometerVisual(this.currentAngle, this.currentSpeed);
+        this.finishRound();
+        return;
+      }
+    }
+
+    this.loopRaf = requestAnimationFrame((t) => this.gameLoop(t));
+  }
+
+  // =========================================================================
+  // UPDATE VISUAL SPEEDOMETER & ODOMETER
+  // =========================================================================
+  updateSpeedometerVisual(angle, speed) {
+    // 1. Putar Jarum SVG (Origin di 190px 190px)
+    if (this.dom.needleGroup) {
+      this.dom.needleGroup.setAttribute('style', `transform-origin: 190px 190px; transform: rotate(${angle.toFixed(1)}deg);`);
+    }
+
+    // 2. Angka Digital Speed
+    if (this.dom.speedDigitalVal) {
+      this.dom.speedDigitalVal.textContent = Math.max(0, Math.min(180, speed));
+    }
+
+    // 3. Tampilan Odometer Digital (5 Digit)
+    const odoStr = this.odometerMileage.toString().padStart(5, '0');
+    for (let i = 0; i < 5; i++) {
+      if (this.dom.odoDigits[i]) {
+        this.dom.odoDigits[i].textContent = odoStr[i] || '0';
+      }
+    }
+
+    // 4. Update Badge Zona Aktif
+    if (this.dom.liveZoneStatus) {
+      if (speed >= 162) {
+        this.dom.liveZoneStatus.className = 'zone-status-badge zone-tier1';
+        this.dom.liveZoneStatus.textContent = 'ZONA: TIER 1 (KAOS / TOPI)';
+      } else if (speed >= 108) {
+        this.dom.liveZoneStatus.className = 'zone-status-badge zone-tier2';
+        this.dom.liveZoneStatus.textContent = 'ZONA: TIER 2 (PAYUNG / JAS / TONGKAT)';
+      } else if (speed >= 1) {
+        this.dom.liveZoneStatus.className = 'zone-status-badge zone-tier3';
+        this.dom.liveZoneStatus.textContent = 'ZONA: TIER 3 (SHOPPING BAG)';
+      } else {
+        this.dom.liveZoneStatus.className = 'zone-status-badge zone-idle';
+        this.dom.liveZoneStatus.textContent = 'ZONA: SIAP GAS';
+      }
+    }
+  }
+
+  emitNeedleSparks() {
+    // Hitung posisi ujung jarum di layar
+    const rect = this.dom.needleGroup ? this.dom.needleGroup.getBoundingClientRect() : null;
+    if (rect) {
+      const x = rect.left + rect.width / 2;
+      const y = rect.top + 20;
+      this.particles.createSparks(x, y, 6, this.currentSpeed >= 162);
+    }
+  }
+
+  // =========================================================================
+  // SELESAI PUTARAN & TAMPILKAN HADIAH (PRIZE REVEAL)
+  // =========================================================================
+  async finishRound() {
+    this.state = 'GAMEOVER';
+    if (this.loopRaf) cancelAnimationFrame(this.loopRaf);
+    window.soundSystem.stopBGM();
+    window.soundSystem.stopEngineRev();
+
+    const prize = this.activePrize;
+
+    // Bunyikan Fanfare Kemenangan Sesuai Tier
+    window.soundSystem.playPrizeWin(prize.tier);
+
+    // Ledakan Confetti & Bintang
+    this.particles.createOverchargeExplosion();
+    this.triggerScreenShake(7);
+
+    // Tampilkan Data Hadiah di Screen Game Over
+    this.dom.resPrizeName.textContent = prize.prizeName;
+    this.dom.resTierBadge.textContent = prize.tierName;
+    this.dom.resTierBadge.className = `tier-badge ${prize.badgeClass}`;
+    this.dom.resTierDesc.textContent = prize.desc;
+    this.dom.resFinalSpeed.textContent = `${prize.targetSpeed} KM/H`;
+    this.dom.resHoldTime.textContent = `${this.holdDuration.toFixed(1)}s`;
+    this.dom.resBoothLoc.textContent = this.location === 'RA' ? 'Rest Area (RA)' : 'Pelabuhan';
+
+    // Artwork SVG Hadiah
+    this.dom.resPrizeIconBox.innerHTML = this.getPrizeArtworkSvg(prize.prizeType);
+
+    // Beralih Layar
+    setTimeout(() => {
+      this.dom.gameScreen.classList.add('hidden');
+      this.dom.gameOverScreen.classList.remove('hidden');
+    }, 400);
+
+    // Simpan ke Google Sheet & LocalStorage
+    await this.syncScoreToBackend(prize);
+  }
+
+  // =========================================================================
+  // VECTOR ARTWORK SVG UNTUK HADIAH
+  // =========================================================================
+  getPrizeArtworkSvg(type) {
+    switch (type) {
+      case 'tshirt':
+        // Kaos Eksklusif Kratingdaeng
+        return `
+          <svg class="prize-artwork-svg" viewBox="0 0 64 64" fill="none">
+            <path d="M18 12 L26 18 Q32 22 38 18 L46 12 L56 22 L49 28 L46 25 L46 54 L18 54 L18 25 L15 28 L8 22 Z" fill="#ffd700" stroke="#b45309" stroke-width="2" stroke-linejoin="round"/>
+            <path d="M26 18 Q32 22 38 18" stroke="#e60000" stroke-width="3" fill="none"/>
+            <circle cx="32" cy="34" r="7" fill="#e60000"/>
+            <path d="M28 34 L36 34" stroke="#ffd700" stroke-width="2"/>
+          </svg>`;
+
+      case 'cap':
+        // Topi Kratingdaeng
+        return `
+          <svg class="prize-artwork-svg" viewBox="0 0 64 64" fill="none">
+            <ellipse cx="28" cy="36" rx="20" ry="14" fill="#e60000" stroke="#ffd700" stroke-width="2"/>
+            <path d="M20 40 Q40 40 56 36 Q44 46 22 46 Z" fill="#ffd700" stroke="#b45309" stroke-width="1.5"/>
+            <circle cx="28" cy="22" r="3" fill="#ffd700"/>
+            <path d="M20 32 Q28 26 36 32" stroke="#fff" stroke-width="2" fill="none"/>
+          </svg>`;
+
+      case 'umbrella':
+        // Payung Lipat
+        return `
+          <svg class="prize-artwork-svg" viewBox="0 0 64 64" fill="none">
+            <path d="M32 12 Q12 28 14 36 L50 36 Q52 28 32 12 Z" fill="#0284c7" stroke="#38bdf8" stroke-width="2"/>
+            <path d="M32 36 L32 50 Q32 54 28 54 Q24 54 24 50" stroke="#ffd700" stroke-width="3" fill="none" stroke-linecap="round"/>
+            <path d="M24 36 Q32 32 40 36" stroke="#fff" stroke-width="1.5" fill="none"/>
+            <line x1="32" y1="8" x2="32" y2="12" stroke="#ffd700" stroke-width="2.5" stroke-linecap="round"/>
+          </svg>`;
+
+      case 'raincoat':
+        // Jas Hujan
+        return `
+          <svg class="prize-artwork-svg" viewBox="0 0 64 64" fill="none">
+            <path d="M26 12 Q32 6 38 12 L44 18 L54 26 L48 32 L44 28 L44 56 L20 56 L20 28 L16 32 L10 26 L20 18 Z" fill="#0284c7" stroke="#38bdf8" stroke-width="2"/>
+            <circle cx="32" cy="12" r="7" stroke="#38bdf8" stroke-width="2" fill="none"/>
+            <line x1="32" y1="20" x2="32" y2="56" stroke="#ffd700" stroke-width="2"/>
+          </svg>`;
+
+      case 'tolstick':
+        // Tongkat Tol (Khusus RA)
+        return `
+          <svg class="prize-artwork-svg" viewBox="0 0 64 64" fill="none">
+            <rect x="22" y="10" width="20" height="14" rx="2" fill="#ffd700" stroke="#b45309" stroke-width="1.5"/>
+            <rect x="25" y="13" width="6" height="4" rx="1" fill="#0284c7"/>
+            <line x1="32" y1="24" x2="32" y2="56" stroke="#94a3b8" stroke-width="4" stroke-linecap="round"/>
+            <rect x="29" y="44" width="6" height="12" rx="2" fill="#e60000"/>
+          </svg>`;
+
+      case 'bagcover':
+        // Cover Tas (Khusus Pelabuhan)
+        return `
+          <svg class="prize-artwork-svg" viewBox="0 0 64 64" fill="none">
+            <ellipse cx="32" cy="34" rx="18" ry="22" fill="#0284c7" stroke="#38bdf8" stroke-width="2"/>
+            <path d="M20 24 Q32 16 44 24" stroke="#ffd700" stroke-width="2" fill="none"/>
+            <path d="M22 44 Q32 50 42 44" stroke="#ffd700" stroke-width="2" fill="none"/>
+            <path d="M26 34 L38 34" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
+          </svg>`;
+
+      case 'shoppingbag':
+      default:
+        // Shopping Bag
+        return `
+          <svg class="prize-artwork-svg" viewBox="0 0 64 64" fill="none">
+            <rect x="16" y="24" width="32" height="34" rx="3" fill="#059669" stroke="#34d399" stroke-width="2"/>
+            <path d="M24 24 L24 16 Q32 10 40 16 L40 24" stroke="#ffd700" stroke-width="3" fill="none" stroke-linecap="round"/>
+            <circle cx="32" cy="40" r="7" fill="#ffd700"/>
+            <path d="M28 40 L36 40" stroke="#e60000" stroke-width="2"/>
+          </svg>`;
+    }
+  }
+
+  // =========================================================================
+  // INTEGRASI GOOGLE APPS SCRIPT & LOCAL STORAGE
+  // =========================================================================
+  async syncScoreToBackend(prize) {
     this.dom.sheetSyncStatus.innerHTML = `
-      <span class="spinner"></span> Menyimpan skor ke Google Sheet & membuat sertifikat di Google Drive...
+      <span class="spinner"></span> Menyimpan data pemenang ke Google Sheet & Drive...
     `;
     this.dom.sheetSyncStatus.className = 'status-pill pending';
     this.dom.certLinkContainer.classList.add('hidden');
 
     const payload = {
       name: this.playerName,
-      score: this.score,
-      tier: tier,
-      peakRpm: this.peakRpm,
-      duration: this.duration,
-      maxPercent: Math.round(this.splitPercent),
-      device: window.innerWidth < 768 ? 'Mobile' : 'Desktop'
+      score: prize.targetSpeed,
+      tier: `${prize.tierName}: ${prize.prizeName}`,
+      peakRpm: prize.targetSpeed,
+      duration: parseFloat(this.holdDuration.toFixed(1)),
+      maxPercent: `${prize.targetSpeed} KM/H`,
+      device: `${window.innerWidth < 768 ? 'Mobile' : 'Desktop'} (${this.location === 'RA' ? 'Booth RA' : 'Booth Pelabuhan'})`
     };
 
     try {
       const result = await window.apiService.submitScore(payload);
-      
+
       this.dom.sheetSyncStatus.className = 'status-pill success';
       this.dom.sheetSyncStatus.innerHTML = `
-        ${result.message || 'Berhasil dicatat!'} <strong>(Peringkat #${result.rank || 1})</strong>
+        ${result.message || 'Tercatat di Google Sheet!'} <strong>(Peringkat #${result.rank || 1})</strong>
       `;
 
-      // Jika ada sertifikat Google Drive
       if (result.certificateUrl && result.certificateUrl !== '#') {
         this.dom.certLinkContainer.classList.remove('hidden');
         this.dom.certLinkBtn.href = result.certificateUrl;
       }
-
     } catch (e) {
       this.dom.sheetSyncStatus.className = 'status-pill error';
-      this.dom.sheetSyncStatus.textContent = 'Tersimpan di Penyimpanan Lokal (Offline).';
+      this.dom.sheetSyncStatus.textContent = 'Data tersimpan di penyimpanan browser lokal (Offline).';
     }
 
-    // Refresh Leaderboard
     this.updateLeaderboardDisplay();
   }
 
   async updateLeaderboardDisplay() {
     if (!this.dom.leaderboardBody) return;
-    this.dom.leaderboardBody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Memuat Leaderboard...</td></tr>';
+    this.dom.leaderboardBody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Memuat Riwayat...</td></tr>';
 
     const scores = await window.apiService.getLeaderboard();
-    
+
     if (!scores || scores.length === 0) {
-      this.dom.leaderboardBody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Belum ada skor tercatat. Jadilah yang pertama!</td></tr>';
+      this.dom.leaderboardBody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Belum ada riwayat pemenang. Jadilah yang pertama!</td></tr>';
       return;
     }
 
@@ -842,12 +817,12 @@ class KratingdaengGame {
         : idx === 2 
         ? '<span class="rank-badge rank-3">3</span>' 
         : `<span class="rank-badge">${idx + 1}</span>`;
-      const isTop3 = idx < 3 ? 'top-rank' : '';
+
       rowsHtml += `
-        <tr class="${isTop3}">
+        <tr class="${idx < 3 ? 'top-rank' : ''}">
           <td class="rank-col">${rankBadge}</td>
           <td class="name-col"><strong>${this.escapeHtml(entry.name)}</strong></td>
-          <td class="score-col">${(entry.score || 0).toLocaleString('id-ID')}</td>
+          <td class="score-col">${(entry.score || 0)} KM/H</td>
           <td class="tier-col">${this.escapeHtml(entry.tier || '')}</td>
         </tr>
       `;
@@ -857,19 +832,29 @@ class KratingdaengGame {
   }
 
   shareScore() {
-    const tierInfo = this.determineTier();
-    const text = `Saya baru saja bermain Ketuk Ketupat Rush Kratingdaeng dan berhasil membuat ketupat terbelah ${Math.round(this.splitPercent)}% (${tierInfo.tier}) dengan skor ${this.score.toLocaleString('id-ID')} PTS! Bisakah kamu membelah 100%?`;
+    if (!this.activePrize) return;
+    const text = `Saya baru saja memutar Speedometer Lucky Dip Kratingdaeng dan memenangkan ${this.activePrize.prizeName} (${this.activePrize.tierName}) dengan kecepatan ${this.activePrize.targetSpeed} KM/H! Gas pol sekarang!`;
+
     if (navigator.share) {
       navigator.share({
-        title: 'Kratingdaeng Ketuk Ketupat Rush',
+        title: 'Kratingdaeng Speedometer Lucky Dip',
         text: text,
         url: window.location.href
       }).catch(() => {});
     } else {
       navigator.clipboard.writeText(text).then(() => {
-        alert('Teks skor berhasil disalin ke clipboard! Bagikan ke temanmu.');
+        alert('Teks berhasil disalin ke clipboard! Bagikan ke temanmu.');
       });
     }
+  }
+
+  triggerScreenShake(intensity = 6) {
+    const mainWrap = document.getElementById('app-container');
+    if (!mainWrap) return;
+    mainWrap.style.transform = `translate(${(Math.random() - 0.5) * intensity}px, ${(Math.random() - 0.5) * intensity}px)`;
+    setTimeout(() => {
+      mainWrap.style.transform = 'translate(0, 0)';
+    }, 60);
   }
 
   escapeHtml(str) {
@@ -882,7 +867,7 @@ class KratingdaengGame {
   }
 }
 
-// Inisialisasi saat DOM siap
+// Inisialisasi Game saat dokumen siap
 window.addEventListener('DOMContentLoaded', () => {
   window.game = new KratingdaengGame();
 });

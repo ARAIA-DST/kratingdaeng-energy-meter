@@ -150,9 +150,9 @@
       </div>
     </main>
 
-    <!-- ==================== 2. GAME SCREEN (SPEEDOMETER 180°) ==================== -->
+    <!-- ==================== 2. GAME SCREEN (KRATINGDAENG ENERGI PIT - ENERGY FUEL GAUGE) ==================== -->
     <section id="game-screen" class="screen hidden">
-      <!-- HUD Stats -->
+      <!-- HUD Top Bar -->
       <div class="hud-bar">
         <div class="hud-stat">
           <span class="hud-label">PESERTA</span>
@@ -164,189 +164,249 @@
         </div>
         <div class="hud-stat" style="align-items: flex-end;">
           <span class="hud-label">STATUS GAS</span>
-          <span id="hud-gas-status" class="hud-val gold">SIAP GAS!</span>
+          <span id="hud-gas-status" class="hud-val gold">IDLE</span>
         </div>
       </div>
 
-      <!-- Overcharge / Tier Notification Banner -->
-      <div id="overcharge-banner" class="overcharge-banner">
-        TEKAN & TAHAN PEDAL GAS UNTUK MEMUTAR JARUM!
-      </div>
+      <!-- MAIN INSTRUMENT CHASSIS (Sesuai Gambar Referensi) -->
+      <div class="energy-pit-chassis">
+        <!-- 4 Corner Hex Chrome Bolts -->
+        <div class="chassis-bolt bolt-tl"></div>
+        <div class="chassis-bolt bolt-tr"></div>
+        <div class="chassis-bolt bolt-bl"></div>
+        <div class="chassis-bolt bolt-br"></div>
 
-      <!-- SPEEDOMETER ARENA (180 DERAJAT) -->
-      <div class="speedometer-arena">
-        <div class="speedometer-box">
-          <!-- SVG Gauge Face 180 Derajat -->
-          <svg viewBox="0 0 380 230" class="speedometer-svg">
+        <!-- Corner Badges -->
+        <div class="chassis-badge badge-top-left">
+          <img src="assets/logo.png" alt="Kratingdaeng Logo" class="chassis-logo-img">
+        </div>
+        <div class="chassis-badge badge-top-right">
+          <svg viewBox="0 0 42 42" class="racing-shield-svg">
+            <path d="M21 2 L38 8 L38 24 Q38 36 21 40 Q4 36 4 24 L4 8 Z" fill="#0b1736" stroke="#ffd700" stroke-width="1.8"/>
+            <rect x="8" y="22" width="26" height="12" fill="#e60000" opacity="0.8"/>
+            <circle cx="21" cy="14" r="5" fill="#ffd700"/>
+          </svg>
+        </div>
+        <div class="chassis-badge badge-bottom-left">
+          <svg viewBox="0 0 36 24" class="racing-bull-tag">
+            <rect x="1" y="1" width="34" height="22" rx="4" fill="#070e20" stroke="#ffd700" stroke-width="1.5"/>
+            <circle cx="18" cy="12" r="5" fill="#ffd700"/>
+            <path d="M8 12 L28 12" stroke="#e60000" stroke-width="2"/>
+          </svg>
+        </div>
+
+        <!-- Header Title Bar Atas -->
+        <div class="fuel-gauge-title-bar">
+          <span class="title-pit-main">KRATINGDAENG ENERGI PIT - </span>
+          <span class="title-pit-sub">ENERGY FUEL GAUGE</span>
+        </div>
+
+        <!-- INSTRUMENT CLUSTER CONTAINER -->
+        <div class="instrument-cluster-wrap">
+          <!-- Circular Tachometer & Prize Ring SVG -->
+          <svg viewBox="0 0 460 420" class="tachometer-svg" id="tachometer-main-svg">
             <defs>
-              <!-- Gradient Tier 3 (0-108 KM/H, 60%) -->
-              <linearGradient id="gradTier3" x1="0%" y1="100%" x2="50%" y2="0%">
-                <stop offset="0%" stop-color="#059669"/>
-                <stop offset="100%" stop-color="#10b981"/>
-              </linearGradient>
-
-              <!-- Gradient Tier 2 (108-162 KM/H, 30%) -->
-              <linearGradient id="gradTier2" x1="0%" y1="0%" x2="100%" y2="50%">
-                <stop offset="0%" stop-color="#0284c7"/>
-                <stop offset="100%" stop-color="#38bdf8"/>
-              </linearGradient>
-
-              <!-- Gradient Tier 1 Redline (162-180 KM/H, 10%) -->
-              <linearGradient id="gradTier1" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stop-color="#f59e0b"/>
-                <stop offset="100%" stop-color="#ef4444"/>
-              </linearGradient>
-
-              <!-- Dial Drop Shadow -->
-              <filter id="gaugeGlow" x="-20%" y="-20%" width="140%" height="140%">
+              <!-- Glow Filters -->
+              <filter id="neonRedGlow" x="-30%" y="-30%" width="160%" height="160%">
+                <feGaussianBlur stdDeviation="5" result="blur"/>
+                <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+              </filter>
+              <filter id="goldSlotGlow" x="-30%" y="-30%" width="160%" height="160%">
                 <feGaussianBlur stdDeviation="6" result="blur"/>
                 <feComposite in="SourceGraphic" in2="blur" operator="over"/>
               </filter>
+
+              <!-- Radial Background for Dial -->
+              <radialGradient id="dialInnerGrad" cx="50%" cy="55%" r="50%">
+                <stop offset="0%" stop-color="#0f224a"/>
+                <stop offset="70%" stop-color="#07122b"/>
+                <stop offset="100%" stop-color="#030816"/>
+              </radialGradient>
             </defs>
 
-            <!-- Outer Metallic Bezel Ring (180 Deg Arc) -->
-            <path d="M 30,190 A 160,160 0 0,1 350,190" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="26" stroke-linecap="round"/>
+            <!-- Curved Side Chrome Frames -->
+            <path d="M 30,80 Q 70,210 30,340" fill="none" stroke="#718096" stroke-width="12" opacity="0.6"/>
+            <path d="M 430,80 Q 390,210 430,340" fill="none" stroke="#718096" stroke-width="12" opacity="0.6"/>
 
-            <!-- Sektor 3 Arc (60%): 0 s/d 108 km/h (-90deg s/d +18deg, panjang arc 108 deg) -->
-            <!-- Radius 150: Dari (40,190) s/d (190 + 150*cos(18°), 190 - 150*sin(18°)) = (332.6, 143.6) -->
-            <path id="arc-tier-3" d="M 40,190 A 150,150 0 0,1 236.3,47.3" fill="none" stroke="url(#gradTier3)" stroke-width="16" stroke-linecap="round"/>
+            <!-- OUTER PRIZE SECTOR RING (8 SEGMEN HADIAH LUCKY DIP) -->
+            <!-- Background Ring Base -->
+            <circle cx="230" cy="220" r="195" fill="none" stroke="#060c1d" stroke-width="48"/>
+            <circle cx="230" cy="220" r="171" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="2"/>
+            <circle cx="230" cy="220" r="219" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="2.5"/>
 
-            <!-- Sektor 2 Arc (30%): 108 s/d 162 km/h (+18deg s/d +72deg, panjang arc 54 deg) -->
-            <!-- Dari (236.3, 47.3) s/d (190 + 150*cos(-72°+90°=18°)) -> (332.6, 143.6) -->
-            <path id="arc-tier-2" d="M 239.5,48.5 A 150,150 0 0,1 332.6,143.6" fill="none" stroke="url(#gradTier2)" stroke-width="16"/>
-
-            <!-- Sektor 1 Arc (10% - REDLINE): 162 s/d 180 km/h (+72deg s/d +90deg, panjang arc 18 deg) -->
-            <!-- Dari (332.6, 143.6) s/d (340, 190) -->
-            <path id="arc-tier-1" d="M 334.2,148.8 A 150,150 0 0,1 340,190" fill="none" stroke="url(#gradTier1)" stroke-width="16" stroke-linecap="round" filter="url(#gaugeGlow)"/>
-
-            <!-- Label Sektor Pada Dial -->
-            <text x="120" y="80" class="gauge-sector-label tier3-lbl">TIER 3 (60%)</text>
-            <text x="290" y="85" class="gauge-sector-label tier2-lbl">TIER 2 (30%)</text>
-            <text x="345" y="140" class="gauge-sector-label tier1-lbl">T1 (10%)</text>
-
-            <!-- Speedometer Radial Ticks & Numbers -->
-            <g id="speed-ticks-group">
-              <!-- 0 KM/H -->
-              <line x1="45" y1="190" x2="60" y2="190" stroke="#fff" stroke-width="3"/>
-              <text x="70" y="194" class="speed-tick-num">0</text>
-
-              <!-- 20 KM/H -->
-              <line x1="53" y1="144" x2="67" y2="149" stroke="#fff" stroke-width="2.5"/>
-              <text x="77" y="156" class="speed-tick-num">20</text>
-
-              <!-- 40 KM/H -->
-              <line x1="77" y1="103" x2="89" y2="112" stroke="#fff" stroke-width="2.5"/>
-              <text x="98" y="123" class="speed-tick-num">40</text>
-
-              <!-- 60 KM/H -->
-              <line x1="113" y1="70" x2="122" y2="82" stroke="#fff" stroke-width="2.5"/>
-              <text x="130" y="96" class="speed-tick-num">60</text>
-
-              <!-- 80 KM/H -->
-              <line x1="158" y1="49" x2="163" y2="63" stroke="#fff" stroke-width="2.5"/>
-              <text x="165" y="80" class="speed-tick-num">80</text>
-
-              <!-- 100 KM/H -->
-              <line x1="207" y1="47" x2="204" y2="61" stroke="#fff" stroke-width="2.5"/>
-              <text x="200" y="79" class="speed-tick-num">100</text>
-
-              <!-- 120 KM/H -->
-              <line x1="255" y1="62" x2="247" y2="75" stroke="#fff" stroke-width="2.5"/>
-              <text x="238" y="94" class="speed-tick-num">120</text>
-
-              <!-- 140 KM/H -->
-              <line x1="295" y1="92" x2="284" y2="102" stroke="#fff" stroke-width="2.5"/>
-              <text x="268" y="118" class="speed-tick-num">140</text>
-
-              <!-- 160 KM/H -->
-              <line x1="322" y1="132" x2="308" y2="138" stroke="#ff3344" stroke-width="3"/>
-              <text x="288" y="150" class="speed-tick-num redline">160</text>
-
-              <!-- 180 KM/H (MAX) -->
-              <line x1="335" y1="190" x2="320" y2="190" stroke="#ff1744" stroke-width="3.5"/>
-              <text x="298" y="194" class="speed-tick-num redline">180</text>
+            <!-- Segmen 0: Shopping Bag (Kiri Bawah, ~0 - 1.2 RPM, Angle -125° s/d -95°) -->
+            <g id="prize-slot-0" class="prize-slot-wedge">
+              <path class="slot-bg-arc" d="M 87,314 A 195,195 0 0,1 64,220" fill="none" stroke="rgba(11,28,64,0.85)" stroke-width="44"/>
+              <image href="assets/logo.png" x="80" y="248" width="22" height="18" opacity="0.8"/>
+              <text x="91" y="278" class="slot-text-label">Shopping Bag</text>
             </g>
 
-            <!-- JARUM SPEEDOMETER (NEEDLE) -->
-            <!-- Pivot di (190, 190). Default menghadap -90 deg (0 km/h, ke kiri) -->
-            <g id="speedometer-needle-group" style="transform-origin: 190px 190px; transform: rotate(-90deg);">
+            <!-- Segmen 1: Topi (Kiri Tengah, ~1.2 - 2.5 RPM, Angle -95° s/d -65°) -->
+            <g id="prize-slot-1" class="prize-slot-wedge">
+              <path class="slot-bg-arc" d="M 64,220 A 195,195 0 0,1 92,128" fill="none" stroke="rgba(11,28,64,0.85)" stroke-width="44"/>
+              <!-- Topi Icon -->
+              <path d="M 94,158 Q 106,148 118,158 Q 128,162 134,166 Q 118,168 94,166 Z" fill="#ffd700" stroke="#b45309" stroke-width="1.2"/>
+              <text x="110" y="180" class="slot-text-label">Topi</text>
+            </g>
+
+            <!-- Segmen 2: Kaos (Kiri Atas, ~2.5 - 4.0 RPM, Angle -65° s/d -30°) -> SOROTAN GOLD DI GAMBAR! -->
+            <g id="prize-slot-2" class="prize-slot-wedge slot-highlight-gold active-slot">
+              <path class="slot-bg-arc" d="M 92,128 A 195,195 0 0,1 155,60" fill="none" stroke="rgba(245,158,11,0.25)" stroke-width="44"/>
+              <!-- Kaos Icon -->
+              <path d="M 126,76 L 134,82 Q 138,84 142,82 L 150,76 L 156,84 L 151,89 L 150,105 L 126,105 L 125,89 L 120,84 Z" fill="#070e20" stroke="#000" stroke-width="1.5"/>
+              <text x="138" y="117" class="slot-text-label gold-lbl">Kaos</text>
+            </g>
+
+            <!-- Segmen 3: Topi (Puncak Kiri, ~4.0 - 5.0 RPM, Angle -30° s/d 0°) -->
+            <g id="prize-slot-3" class="prize-slot-wedge">
+              <path class="slot-bg-arc" d="M 155,60 A 195,195 0 0,1 230,25" fill="none" stroke="rgba(11,28,64,0.85)" stroke-width="44"/>
+              <path d="M 194,52 Q 206,44 218,52 Q 228,55 234,58 Q 218,60 194,58 Z" fill="#38bdf8" stroke="#0284c7" stroke-width="1.2"/>
+              <text x="206" y="73" class="slot-text-label">Topi</text>
+            </g>
+
+            <!-- Segmen 4: Payung Lipat (Puncak Kanan, ~5.0 - 6.2 RPM, Angle 0° s/d +30°) -->
+            <g id="prize-slot-4" class="prize-slot-wedge">
+              <path class="slot-bg-arc" d="M 230,25 A 195,195 0 0,1 305,60" fill="none" stroke="rgba(11,28,64,0.85)" stroke-width="44"/>
+              <!-- Payung Icon -->
+              <path d="M 270,48 Q 256,58 258,64 L 284,64 Q 286,58 270,48 Z" fill="#38bdf8" stroke="#0284c7" stroke-width="1.2"/>
+              <path d="M 270,64 L 270,72 Q 270,75 268,75" stroke="#ffd700" stroke-width="1.8" fill="none"/>
+              <text x="272" y="86" class="slot-text-label">Payung Lipat</text>
+            </g>
+
+            <!-- Segmen 5: Jas Hujan (Kanan Atas, ~6.2 - 7.5 RPM, Angle +30° s/d +65°) -->
+            <g id="prize-slot-5" class="prize-slot-wedge">
+              <path class="slot-bg-arc" d="M 305,60 A 195,195 0 0,1 368,128" fill="none" stroke="rgba(11,28,64,0.85)" stroke-width="44"/>
+              <!-- Jas Hujan Icon -->
+              <path d="M 334,88 L 344,95 L 342,114 L 326,114 L 324,95 Z" fill="#0284c7" stroke="#38bdf8" stroke-width="1.2"/>
+              <circle cx="334" cy="84" r="4" fill="#38bdf8"/>
+              <text x="335" y="127" class="slot-text-label">Jas Hujan</text>
+            </g>
+
+            <!-- Segmen 6: Tongkat Tol / Cover Tas (Kanan Tengah, ~7.5 - 8.8 RPM, Angle +65° s/d +95°) -->
+            <g id="prize-slot-6" class="prize-slot-wedge">
+              <path class="slot-bg-arc" d="M 368,128 A 195,195 0 0,1 396,220" fill="none" stroke="rgba(11,28,64,0.85)" stroke-width="44"/>
+              <!-- Tongkat Tol Icon -->
+              <rect x="366" y="150" width="12" height="8" rx="1.5" fill="#ffd700" transform="rotate(-30 372 154)"/>
+              <line x1="362" y1="168" x2="350" y2="188" stroke="#94a3b8" stroke-width="3" stroke-linecap="round"/>
+              <text id="slot6-dynamic-label" x="368" y="200" class="slot-text-label">Tongkat Tol</text>
+            </g>
+
+            <!-- Segmen 7: Shopping Bag (Kanan Bawah, ~8.8 - 10 RPM, Angle +95° s/d +125°) -->
+            <g id="prize-slot-7" class="prize-slot-wedge">
+              <path class="slot-bg-arc" d="M 396,220 A 195,195 0 0,1 373,314" fill="none" stroke="rgba(11,28,64,0.85)" stroke-width="44"/>
+              <image href="assets/logo.png" x="358" y="248" width="22" height="18" opacity="0.8"/>
+              <text x="369" y="278" class="slot-text-label">Shopping Bag</text>
+            </g>
+
+            <!-- INNER TACHOMETER DIAL FACE -->
+            <circle cx="230" cy="220" r="168" fill="url(#dialInnerGrad)" stroke="#11224d" stroke-width="4"/>
+            <!-- Bezel Divider Ring -->
+            <circle cx="230" cy="220" r="162" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="2"/>
+
+            <!-- REDLINE GLOW ARC (RPM 7 s/d 10) -->
+            <!-- Dari RPM 7 (angle ~+50°) ke RPM 10 (angle ~+125°) -->
+            <path d="M 324,142 A 132,132 0 0,1 328,298" fill="none" stroke="#ef4444" stroke-width="7" stroke-linecap="round" filter="url(#neonRedGlow)"/>
+
+            <!-- TACHOMETER RADIAL NUMBERS (0 s/d 10) -->
+            <g class="tachometer-numbers">
+              <!-- 0 RPM (kiri bawah, angle -125°) -->
+              <text x="144" y="294" class="rpm-num">0</text>
+              <!-- 1 RPM -->
+              <text x="126" y="244" class="rpm-num">1</text>
+              <!-- 2 RPM -->
+              <text x="134" y="190" class="rpm-num">2</text>
+              <!-- 3 RPM -->
+              <text x="160" y="142" class="rpm-num">3</text>
+              <!-- 4 RPM -->
+              <text x="198" y="112" class="rpm-num">4</text>
+              <!-- 5 RPM (puncak atas) -->
+              <text x="230" y="104" class="rpm-num">5</text>
+              <!-- 6 RPM -->
+              <text x="264" y="114" class="rpm-num">6</text>
+              <!-- 7 RPM (Mulai Redline) -->
+              <text x="298" y="146" class="rpm-num rpm-red">7</text>
+              <!-- 8 RPM -->
+              <text x="320" y="196" class="rpm-num rpm-red">8</text>
+              <!-- 9 RPM -->
+              <text x="324" y="252" class="rpm-num rpm-red">9</text>
+              <!-- 10 RPM (Puncak Redline) -->
+              <text x="310" y="304" class="rpm-num rpm-red">10</text>
+            </g>
+
+            <!-- Radial Ticks Along Scale -->
+            <g id="rpm-ticks-group">
+              <!-- Ticks di-render via SVG garis radial presisi -->
+              <line x1="135" y1="280" x2="148" y2="272" stroke="#fff" stroke-width="2.5"/>
+              <line x1="120" y1="230" x2="134" y2="228" stroke="#fff" stroke-width="2.5"/>
+              <line x1="124" y1="180" x2="138" y2="183" stroke="#fff" stroke-width="2.5"/>
+              <line x1="148" y1="134" x2="159" y2="143" stroke="#fff" stroke-width="2.5"/>
+              <line x1="186" y1="102" x2="194" y2="114" stroke="#fff" stroke-width="2.5"/>
+              <line x1="230" y1="92" x2="230" y2="106" stroke="#fff" stroke-width="3"/>
+              <line x1="274" y1="102" x2="266" y2="114" stroke="#fff" stroke-width="2.5"/>
+              <line x1="312" y1="134" x2="301" y2="143" stroke="#ff3344" stroke-width="3"/>
+              <line x1="336" y1="180" x2="322" y2="183" stroke="#ff3344" stroke-width="3"/>
+              <line x1="340" y1="230" x2="326" y2="228" stroke="#ff1744" stroke-width="3.5"/>
+              <line x1="325" y1="280" x2="312" y2="272" stroke="#ff1744" stroke-width="3.5"/>
+            </g>
+
+            <!-- CENTER DIAL TEXT LABELS -->
+            <text x="230" y="165" class="dial-center-title">RPM / FUEL GAUGE:</text>
+            <text x="230" y="185" id="dial-center-prompt" class="dial-center-action">PRESS TO REFUEL!</text>
+
+            <!-- HORIZONTAL LED FUEL BAR (POMPA BENSIN + SEGMEN LED) -->
+            <g id="fuel-led-meter-group">
+              <!-- Ikon Pompa Bensin ⛽ -->
+              <path d="M 162,246 L 162,234 Q 162,232 165,232 L 171,232 Q 174,232 174,234 L 174,246 Z" fill="none" stroke="#94a3b8" stroke-width="1.8"/>
+              <rect x="165" y="235" width="6" height="4" fill="#94a3b8"/>
+              <path d="M 174,236 Q 178,236 178,240 L 178,244" fill="none" stroke="#94a3b8" stroke-width="1.5"/>
+
+              <!-- 12 LED Segmen Blocks (Hijau -> Kuning -> Merah) -->
+              <!-- Segmen 1-6: Hijau -->
+              <rect class="fuel-led led-green" id="f-led-1" x="184" y="232" width="7" height="15" rx="1.5"/>
+              <rect class="fuel-led led-green" id="f-led-2" x="194" y="232" width="7" height="15" rx="1.5"/>
+              <rect class="fuel-led led-green" id="f-led-3" x="204" y="232" width="7" height="15" rx="1.5"/>
+              <rect class="fuel-led led-green" id="f-led-4" x="214" y="232" width="7" height="15" rx="1.5"/>
+              <rect class="fuel-led led-green" id="f-led-5" x="224" y="232" width="7" height="15" rx="1.5"/>
+              <rect class="fuel-led led-green" id="f-led-6" x="234" y="232" width="7" height="15" rx="1.5"/>
+              <!-- Segmen 7-9: Kuning/Gold -->
+              <rect class="fuel-led led-yellow" id="f-led-7" x="244" y="232" width="7" height="15" rx="1.5"/>
+              <rect class="fuel-led led-yellow" id="f-led-8" x="254" y="232" width="7" height="15" rx="1.5"/>
+              <rect class="fuel-led led-yellow" id="f-led-9" x="264" y="232" width="7" height="15" rx="1.5"/>
+              <!-- Segmen 10-12: Merah -->
+              <rect class="fuel-led led-red" id="f-led-10" x="274" y="232" width="7" height="15" rx="1.5"/>
+              <rect class="fuel-led led-red" id="f-led-11" x="284" y="232" width="7" height="15" rx="1.5"/>
+              <rect class="fuel-led led-red" id="f-led-12" x="294" y="232" width="7" height="15" rx="1.5"/>
+            </g>
+
+            <!-- TACHOMETER NEEDLE (JARUM ORANGE-MERAH MENYALA) -->
+            <!-- Pivot di (230, 220). Default menghadap -125° (0 RPM, kiri bawah) -->
+            <g id="tachometer-needle-group" style="transform-origin: 230px 220px; transform: rotate(-125deg);">
               <!-- Bayangan Jarum -->
-              <polygon points="186,192 194,192 191,48 189,48" fill="rgba(0,0,0,0.5)" filter="blur(2px)"/>
-              <!-- Bilah Jarum Utama -->
-              <polygon points="187,190 193,190 191.5,42 188.5,42" fill="url(#gradTier1)"/>
-              <!-- Ujung Jarum Menyala (Glow Tip) -->
-              <polygon points="188,52 192,52 190,32" fill="#ffd700" filter="url(#gaugeGlow)"/>
+              <polygon points="225,224 235,224 231,64 229,64" fill="rgba(0,0,0,0.6)" filter="blur(3px)"/>
+              <!-- Bilah Jarum Utama Oranye/Merah Glowing -->
+              <polygon points="227,220 233,220 231.5,58 228.5,58" fill="#ff3344" filter="url(#neonRedGlow)"/>
+              <polygon points="228,218 232,218 231,60 229,60" fill="#ff6b00"/>
+              <!-- Ujung Jarum Tajam Menembus Sektor -->
+              <polygon points="229,65 231,65 230,48" fill="#ffd700"/>
             </g>
 
-            <!-- Pusat Jarum (Center Bezel Hub & Logo Kratingdaeng) -->
-            <circle cx="190" cy="190" r="32" fill="#0b1736" stroke="#ffd700" stroke-width="3"/>
-            <circle cx="190" cy="190" r="26" fill="#070e20" stroke="rgba(255,255,255,0.2)" stroke-width="1.5"/>
-            <!-- Logo Banteng di Tengah Hub -->
-            <image href="assets/logo.png" x="170" y="174" width="40" height="32" preserveAspectRatio="xMidYMid meet"/>
+            <!-- Central Hub (Pusat Jarum) -->
+            <circle cx="230" cy="220" r="24" fill="#030814" stroke="#ff3344" stroke-width="2.5" filter="url(#neonRedGlow)"/>
+            <circle cx="230" cy="220" r="18" fill="#0a1530" stroke="#ffd700" stroke-width="1.5"/>
+            <circle cx="230" cy="220" r="6" fill="#ffd700"/>
           </svg>
+        </div>
 
-          <!-- Odometer & Digital Speed Readout Box -->
-          <div class="dashboard-readout-panel">
-            <div class="digital-speed-wrap">
-              <span id="speed-digital-val" class="speed-digital-number">0</span>
-              <span class="speed-digital-unit">KM/H</span>
-            </div>
-
-            <!-- ODOMETER (Rolling Digital Mileage Display) -->
-            <div class="odometer-container">
-              <span class="odometer-label">ODOMETER</span>
-              <div class="odometer-rolling-box">
-                <span class="odo-digit" id="odo-d1">0</span>
-                <span class="odo-digit" id="odo-d2">0</span>
-                <span class="odo-digit" id="odo-d3">1</span>
-                <span class="odo-digit" id="odo-d4">8</span>
-                <span class="odo-digit" id="odo-d5">0</span>
-                <span class="odo-unit-tag">KM</span>
-              </div>
-            </div>
-
-            <!-- Live Target Zone Status -->
-            <div id="live-zone-status" class="zone-status-badge zone-idle">
-              ZONA: SIAP PUTAR
-            </div>
+        <!-- ==================== TOMBOL BESAR MERAH: PRESS & HOLD ==================== -->
+        <!-- Persis seperti di gambar referensi pengguna! -->
+        <div class="refuel-btn-wrapper">
+          <div class="neon-red-glow-frame">
+            <button id="btn-hold-gas" class="btn-refuel-glow" aria-label="Press and hold gas pol">
+              <span class="btn-line-top">PRESS & HOLD:</span>
+              <span class="btn-line-bottom">GAS POL / REFUEL</span>
+            </button>
           </div>
         </div>
-      </div>
-
-      <!-- PROGRESS CHARGE TAHAN GAS -->
-      <div class="hold-gauge-container">
-        <div class="hold-label-row">
-          <span class="hold-instruction-text" id="hold-status-instruction">TAHAN PEDAL GAS UNTUK MEMUTAR JARUM</span>
-          <span id="hold-duration-text" class="hold-duration-val">0.0s</span>
-        </div>
-        <div class="hold-charge-track">
-          <div id="hold-charge-bar" class="hold-charge-bar"></div>
-        </div>
-      </div>
-
-      <!-- PEDAL GAS INTERAKTIF (PRESS & HOLD) -->
-      <div class="pedal-control-area">
-        <button id="btn-hold-gas" class="btn-pedal-gas" aria-label="Tekan dan Tahan Pedal Gas">
-          <div class="pedal-surface">
-            <!-- Tread Metal Lines -->
-            <div class="pedal-treads">
-              <div class="tread-bar"></div>
-              <div class="tread-bar"></div>
-              <div class="tread-bar"></div>
-              <div class="tread-bar"></div>
-            </div>
-
-            <!-- Pedal Center Content -->
-            <div class="pedal-content">
-              <svg class="pedal-speed-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"></circle>
-                <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
-              </svg>
-              <span class="pedal-title" id="pedal-btn-title">TEKAN & TAHAN</span>
-              <span class="pedal-subtitle" id="pedal-btn-subtitle">TAHAN PEDAL GAS (ATAU SPASI)</span>
-            </div>
-          </div>
-        </button>
       </div>
     </section>
 
@@ -356,7 +416,82 @@
         <div class="result-badge-icon">
           <img src="assets/logo.png" alt="Kratingdaeng Logo" style="height: 48px; width: auto; object-fit: contain;">
         </div>
-        <h2 style="color:#ffd700; text-transform:uppercase; font-size:20px; letter-spacing:1px; margin-top:5px;">HASIL LUCKY DIP SPEEDOMETER</h2>
+        <h2 style="color:#ffd700; text-transform:uppercase; font-size:20px; letter-spacing:1px; margin-top:5px;">HASIL ENERGY FUEL GAUGE</h2>
+        
+        <!-- Big Prize Reveal Card -->
+        <div class="prize-revealed-card">
+          <div id="res-prize-icon-box" class="prize-artwork-box">
+            <!-- Dynamic SVG Icon diisi JavaScript -->
+          </div>
+          <div class="prize-tagline">SELAMAT! ANDA MENDAPATKAN:</div>
+          <div id="res-prize-name" class="prize-hero-title">Kaos Eksklusif Kratingdaeng</div>
+          <div style="margin-top:8px;">
+            <span id="res-tier-badge" class="tier-badge">Tier 1 (10%)</span>
+          </div>
+          <p id="res-tier-desc" class="result-tier-desc">Hadiah langsung dari Kratingdaeng Lucky Dip!</p>
+        </div>
+      </div>
+
+      <div class="card-panel">
+        <div class="stats-grid">
+          <div class="stat-box">
+            <div id="res-final-speed" class="stat-box-val">0 RPM</div>
+            <div class="stat-box-lbl">Speed RPM</div>
+          </div>
+          <div class="stat-box">
+            <div id="res-hold-time" class="stat-box-val">0.0s</div>
+            <div class="stat-box-lbl">Durasi Tahan</div>
+          </div>
+          <div class="stat-box">
+            <div id="res-booth-loc" class="stat-box-val">RA</div>
+            <div class="stat-box-lbl">Lokasi Booth</div>
+          </div>
+        </div>
+
+        <!-- Status Sinkronisasi Google Sheet -->
+        <div id="sheet-sync-status" class="status-pill pending">
+          <span class="spinner"></span> Menyimpan data pemenang ke Google Sheet...
+        </div>
+
+        <!-- Link Sertifikat Google Drive -->
+        <div id="cert-link-container" class="hidden">
+          <a id="btn-view-cert" href="#" target="_blank" class="cert-btn">
+            <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+            </svg>
+            <span>Lihat Sertifikat Digital di Google Drive</span>
+            <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;">
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+              <polyline points="15 3 21 3 21 9"></polyline>
+              <line x1="10" y1="14" x2="21" y2="3"></line>
+            </svg>
+          </a>
+        </div>
+
+        <div class="result-actions">
+          <button id="btn-share-result" class="btn-secondary">
+            <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="18" cy="5" r="3"></circle>
+              <circle cx="6" cy="12" r="3"></circle>
+              <circle cx="18" cy="19" r="3"></circle>
+              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+              <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+            </svg>
+            BAGIKAN
+          </button>
+          <button id="btn-play-again" class="btn-cta" style="flex: 1.5; padding: 14px;">
+            <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M1 4v6h6"></path>
+              <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+            </svg>
+            PUTAR LAGI
+          </button>
+        </div>
+      </div>
+    </section>
         
         <!-- Big Prize Reveal Card -->
         <div class="prize-revealed-card">

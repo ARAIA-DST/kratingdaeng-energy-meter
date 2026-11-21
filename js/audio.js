@@ -18,13 +18,41 @@ class SoundSystem {
     this.sfxGain = null;
     this.bgmGain = null;
     
-    // Real Engine Audio Synthesis Nodes
-    this.engineNodes = null;
+    // Engine Rev Audio Nodes
+    this.engineOsc1 = null;
+    this.engineOsc2 = null;
+    this.engineGain = null;
+    this.engineFilter = null;
     this.isRevving = false;
-    this.currentRPM = 1000; // Idle 1000 RPM s/d Max 9800 RPM
-    this.targetRPM = 1000;
-    this.engineTimer = null;
     
+    // Sample Audio Resmi dari Pengguna (5 File Audio Balap):
+    // 1. off lower
+    // 2. off midhigh
+    // 3. on high
+    // 4. on low
+    // 5. on midhigh
+    this.samples = {
+      onLow: new Audio('assets/audio/on_low.wav'),
+      onMidHigh: new Audio('assets/audio/on_midhigh.wav'),
+      onHigh: new Audio('assets/audio/on_high.wav'),
+      offMidHigh: new Audio('assets/audio/off_midhigh.wav'),
+      offLower: new Audio('assets/audio/off_lower.wav')
+    };
+
+    // Konfigurasi looping & preloading sample audio
+    this.samples.onLow.loop = true;
+    this.samples.onMidHigh.loop = true;
+    this.samples.onHigh.loop = true;
+    this.samples.offMidHigh.loop = false;
+    this.samples.offLower.loop = false;
+
+    Object.values(this.samples).forEach(snd => {
+      snd.preload = 'auto';
+      snd.volume = 0;
+    });
+
+    this.offTimer = null;
+
     // Inisialisasi Audio Context saat interaksi pengguna pertama kali
     this.initAudioContext();
   }
@@ -64,6 +92,13 @@ class SoundSystem {
     this.isMuted = muted;
     if (this.masterGain && this.ctx) {
       this.masterGain.gain.setValueAtTime(this.isMuted ? 0 : 0.8, this.ctx.currentTime);
+    }
+    if (this.samples) {
+      if (this.isMuted) {
+        Object.values(this.samples).forEach(snd => { snd.muted = true; });
+      } else {
+        Object.values(this.samples).forEach(snd => { snd.muted = false; });
+      }
     }
     return this.isMuted;
   }
@@ -268,262 +303,154 @@ class SoundSystem {
   }
 
   /**
-   * Sound FX: SUARA MESIN MOBIL / MOTOR BALAP NYATA (Real Internal Combustion Engine)
-   * Menggunakan sintesis multi-silinder, resonansi knalpot (exhaust manifold),
-   * wave-shaper distortion untuk suara mesin gahar, dan rev-limiter redline.
+   * Sound FX: Suara Mesin Menderu (Engine Rev) saat Tekan & Tahan Gas
+   * Menggunakan 3 Layer Sample Audio Nyata: on_low, on_midhigh, on_high
    */
   startEngineRev() {
     if (this.isMuted) return;
     this.ensureContext();
-    if (!this.ctx || this.isRevving) return;
+    this.isRevving = true;
 
-    try {
-      this.isRevving = true;
-      this.currentRPM = 1200;
-      this.targetRPM = 1200;
-      const t = this.ctx.currentTime;
+    // Hentikan suara deselerasi (off sounds) jika sedang berputar
+    if (this.offTimer) {
+      clearTimeout(this.offTimer);
+      this.offTimer = null;
+    }
+    if (this.samples) {
+      this.pauseTrackSafe(this.samples.offMidHigh);
+      this.pauseTrackSafe(this.samples.offLower);
 
-      // Master Engine Gain
-      const masterGain = this.ctx.createGain();
-      masterGain.gain.setValueAtTime(0.01, t);
-      masterGain.gain.linearRampToValueAtTime(0.85, t + 0.12);
+      // Mulai putar 3 layer on audio
+      try {
+        this.samples.onLow.currentTime = 0;
+        this.samples.onMidHigh.currentTime = 0;
+        this.samples.onHigh.currentTime = 0;
+        
+        this.samples.onLow.volume = 0.85;
+        this.samples.onMidHigh.volume = 0.05;
+        this.samples.onHigh.volume = 0.0;
 
-      // 1. Distortion WaveShaper untuk karakter mechanical crunch mesin asli
-      const distortion = this.ctx.createWaveShaper();
-      distortion.curve = this.makeDistortionCurve(22);
-      distortion.oversample = '4x';
+        this.playTrackSafe(this.samples.onLow);
+        this.playTrackSafe(this.samples.onMidHigh);
+        this.playTrackSafe(this.samples.onHigh);
+      } catch (e) {
+        console.warn('Gagal memutar sample engine on:', e);
+      }
+    }
+  }
 
-      // 2. Resonansi Knalpot (Exhaust Manifold Bandpass & Lowpass)
-      const exhaustResonator = this.ctx.createBiquadFilter();
-      exhaustResonator.type = 'bandpass';
-      exhaustResonator.frequency.setValueAtTime(260, t);
-      exhaustResonator.Q.setValueAtTime(3.5, t);
+  /**
+   * Update Crossfade & Pitch Sample Mesin berdasarkan Kecepatan KM/H (0 - 180 KM/H)
+   */
+  updateEngineRev(intensity = 0.5, speed = 0) {
+    if (!this.isRevving) return;
 
-      const lowpassBody = this.ctx.createBiquadFilter();
-      lowpassBody.type = 'lowpass';
-      lowpassBody.frequency.setValueAtTime(1400, t);
-      lowpassBody.Q.setValueAtTime(1.8, t);
+    if (this.samples && !this.isMuted) {
+      const spd = typeof speed === 'number' && speed > 0 ? speed : intensity * 180;
 
-      // 3. Silinder Utama (Sawtooth Engine Pulse)
-      const oscCylinder = this.ctx.createOscillator();
-      oscCylinder.type = 'sawtooth';
-      oscCylinder.frequency.setValueAtTime(45, t); // ~1350 RPM 4-silinder
+      // 1. Crossfade dinamis 3 layer sample:
+      // on_low: dominan di 0 - 65 km/h
+      // on_midhigh: dominan di 65 - 135 km/h
+      // on_high: dominan di 135 - 180 km/h (redline)
+      let volLow = 0;
+      let volMid = 0;
+      let volHigh = 0;
 
-      // 4. Harmonis Genap Knalpot (Square / Pulse)
-      const oscHarmonic = this.ctx.createOscillator();
-      oscHarmonic.type = 'square';
-      oscHarmonic.frequency.setValueAtTime(90, t);
-
-      const harmGain = this.ctx.createGain();
-      harmGain.gain.setValueAtTime(0.35, t);
-
-      // 5. Sub-Bass Rumble (Getaran Mesin Berat)
-      const oscSub = this.ctx.createOscillator();
-      oscSub.type = 'triangle';
-      oscSub.frequency.setValueAtTime(32, t);
-
-      const subGain = this.ctx.createGain();
-      subGain.gain.setValueAtTime(0.7, t);
-
-      // 6. Air Intake / Turbo Whine Hiss (Noise Filter)
-      const noiseBuffer = this.createNoiseBuffer();
-      let noiseNode = null;
-      let noiseFilter = null;
-      let noiseGain = null;
-      if (noiseBuffer) {
-        noiseNode = this.ctx.createBufferSource();
-        noiseNode.buffer = noiseBuffer;
-        noiseNode.loop = true;
-
-        noiseFilter = this.ctx.createBiquadFilter();
-        noiseFilter.type = 'bandpass';
-        noiseFilter.frequency.setValueAtTime(1200, t);
-        noiseFilter.Q.setValueAtTime(4.0, t);
-
-        noiseGain = this.ctx.createGain();
-        noiseGain.gain.setValueAtTime(0.04, t);
-
-        noiseNode.connect(noiseFilter);
-        noiseFilter.connect(noiseGain);
-        noiseGain.connect(masterGain);
-        noiseNode.start(t);
+      if (spd <= 65) {
+        const ratio = spd / 65;
+        volLow = 0.9 - (ratio * 0.35); // 0.9 -> 0.55
+        volMid = ratio * 0.7;          // 0.0 -> 0.7
+        volHigh = 0;
+      } else if (spd <= 135) {
+        const ratio = (spd - 65) / 70;
+        volLow = Math.max(0, 0.55 - (ratio * 0.55)); // 0.55 -> 0.0
+        volMid = 0.9 - (ratio * 0.2);               // 0.9 -> 0.7
+        volHigh = ratio * 0.85;                     // 0.0 -> 0.85
+      } else {
+        const ratio = (spd - 135) / 45;
+        volLow = 0;
+        volMid = Math.max(0.1, 0.7 - (ratio * 0.6)); // 0.7 -> 0.1
+        volHigh = 0.85 + (ratio * 0.15);            // 0.85 -> 1.0 (scream!)
       }
 
-      // Wiring Rute Audio
-      oscCylinder.connect(distortion);
-      oscHarmonic.connect(harmGain);
-      harmGain.connect(distortion);
+      this.samples.onLow.volume = Math.max(0, Math.min(1, volLow));
+      this.samples.onMidHigh.volume = Math.max(0, Math.min(1, volMid));
+      this.samples.onHigh.volume = Math.max(0, Math.min(1, volHigh));
 
-      distortion.connect(exhaustResonator);
-      exhaustResonator.connect(lowpassBody);
-      lowpassBody.connect(masterGain);
-
-      oscSub.connect(subGain);
-      subGain.connect(masterGain);
-
-      masterGain.connect(this.sfxGain);
-
-      oscCylinder.start(t);
-      oscHarmonic.start(t);
-      oscSub.start(t);
-
-      this.engineNodes = {
-        masterGain,
-        distortion,
-        exhaustResonator,
-        lowpassBody,
-        oscCylinder,
-        oscHarmonic,
-        oscSub,
-        noiseNode,
-        noiseFilter,
-        noiseGain
-      };
-    } catch (e) {
-      console.warn('Gagal memulai audio rev mesin nyata:', e);
+      // 2. Halus pitch rate bending (0.92x s/d 1.18x) untuk akselerasi organik
+      const rate = 0.92 + (spd / 180) * 0.26;
+      try {
+        this.samples.onLow.playbackRate = rate;
+        this.samples.onMidHigh.playbackRate = rate;
+        this.samples.onHigh.playbackRate = rate;
+      } catch (e) {}
     }
   }
 
   /**
-   * Update Putaran Mesin (RPM) Secara Real-time Mengikuti Pedal Gas
-   * intensity: 0.0 (idle 1200 RPM) s/d 1.0 (redline 9800 RPM)
+   * Hentikan Putaran Gas (Throttle Off / Deceleration)
+   * Memainkan sample nyata: off_midhigh.wav lalu off_lower.wav
    */
-  updateEngineRev(intensity = 0.5) {
-    if (!this.isRevving || !this.ctx || !this.engineNodes) return;
-    const t = this.ctx.currentTime;
-    const clamped = Math.max(0, Math.min(1, intensity));
-
-    // RPM naik dari 1200 RPM s/d 9800 RPM
-    this.targetRPM = 1200 + (clamped * 8600);
-    this.currentRPM += (this.targetRPM - this.currentRPM) * 0.25;
-
-    // Firing frequency mesin 4-silinder = RPM / 30
-    let firingFreq = this.currentRPM / 30;
-
-    // Efek Rev Limiter "Brap-brap-brap" jika berada di Redline (RPM > 8800)
-    let limiterMod = 1.0;
-    if (this.currentRPM > 8500) {
-      const brap = Math.sin(t * 55) > 0 ? 1.0 : 0.75;
-      firingFreq *= brap;
-      limiterMod = brap;
-    }
-
-    const { oscCylinder, oscHarmonic, oscSub, exhaustResonator, lowpassBody, noiseGain, noiseFilter, masterGain } = this.engineNodes;
-
-    if (oscCylinder) oscCylinder.frequency.setTargetAtTime(firingFreq, t, 0.03);
-    if (oscHarmonic) oscHarmonic.frequency.setTargetAtTime(firingFreq * 2.02, t, 0.03);
-    if (oscSub) oscSub.frequency.setTargetAtTime(firingFreq * 0.5, t, 0.03);
-
-    // Knalpot membuka frekuensi resonansi saat gas pol
-    if (exhaustResonator) {
-      const resFreq = 240 + (clamped * 850);
-      exhaustResonator.frequency.setTargetAtTime(resFreq, t, 0.04);
-    }
-    if (lowpassBody) {
-      const lpFreq = 1200 + (clamped * 3800);
-      lowpassBody.frequency.setTargetAtTime(lpFreq, t, 0.04);
-    }
-
-    // Suara desis intake / turbo spool bertambah saat RPM tinggi
-    if (noiseGain && noiseFilter) {
-      noiseGain.gain.setTargetAtTime(0.03 + (clamped * 0.12), t, 0.05);
-      noiseFilter.frequency.setTargetAtTime(1200 + (clamped * 2800), t, 0.05);
-    }
-
-    if (masterGain && this.currentRPM > 8500) {
-      masterGain.gain.setTargetAtTime(0.75 * limiterMod, t, 0.02);
-    }
-  }
-
-  /**
-   * Hentikan Deru Mesin (Dengan Efek Decel Engine Braking & Pop Knalpot)
-   */
-  stopEngineRev() {
-    if (!this.isRevving || !this.ctx || !this.engineNodes) return;
+  stopEngineRev(speedAtRelease = 100) {
+    if (!this.isRevving) return;
     this.isRevving = false;
-    const t = this.ctx.currentTime;
-    const nodes = this.engineNodes;
-    this.engineNodes = null;
 
+    // Segera redam & hentikan semua layer ON
+    if (this.samples) {
+      this.pauseTrackSafe(this.samples.onLow);
+      this.pauseTrackSafe(this.samples.onMidHigh);
+      this.pauseTrackSafe(this.samples.onHigh);
+
+      if (!this.isMuted) {
+        const spd = typeof speedAtRelease === 'number' ? speedAtRelease : 100;
+
+        if (spd >= 80) {
+          // Lepas gas di kecepatan tinggi/sedang: Mainkan off_midhigh dulu
+          try {
+            this.samples.offMidHigh.currentTime = 0;
+            this.samples.offMidHigh.volume = 0.9;
+            this.playTrackSafe(this.samples.offMidHigh);
+
+            // Transisi ke off_lower saat jarum melambat (~1.2 detik kemudian)
+            this.offTimer = setTimeout(() => {
+              try {
+                this.samples.offLower.currentTime = 0;
+                this.samples.offLower.volume = 0.85;
+                this.playTrackSafe(this.samples.offLower);
+              } catch (e) {}
+            }, 1200);
+          } catch (e) {
+            console.warn('Gagal memutar off_midhigh:', e);
+          }
+        } else {
+          // Lepas gas di kecepatan rendah: Langsung mainkan off_lower
+          try {
+            this.samples.offLower.currentTime = 0;
+            this.samples.offLower.volume = 0.85;
+            this.playTrackSafe(this.samples.offLower);
+          } catch (e) {
+            console.warn('Gagal memutar off_lower:', e);
+          }
+        }
+      }
+    }
+  }
+
+  playTrackSafe(track) {
+    if (!track) return;
     try {
-      // Suara decel mesin menurun cepat (engine braking)
-      if (nodes.oscCylinder) {
-        nodes.oscCylinder.frequency.exponentialRampToValueAtTime(35, t + 0.35);
+      const p = track.play();
+      if (p !== undefined) {
+        p.catch(() => {});
       }
-      if (nodes.masterGain) {
-        nodes.masterGain.gain.linearRampToValueAtTime(0.001, t + 0.35);
-      }
-
-      // Mainkan letupan knalpot (exhaust burble / pop) saat gas dilepas
-      this.playExhaustPop();
-
-      setTimeout(() => {
-        try {
-          if (nodes.oscCylinder) nodes.oscCylinder.stop();
-          if (nodes.oscHarmonic) nodes.oscHarmonic.stop();
-          if (nodes.oscSub) nodes.oscSub.stop();
-          if (nodes.noiseNode) nodes.noiseNode.stop();
-        } catch (e) {}
-      }, 380);
-    } catch (e) {
-      console.warn('Error saat stopEngineRev:', e);
-    }
+    } catch (e) {}
   }
 
-  /**
-   * Suara Letupan Knalpot Khas Mobil/Motor Balap (Exhaust Burble / Pop)
-   */
-  playExhaustPop() {
-    if (this.isMuted || !this.ctx) return;
-    const t = this.ctx.currentTime;
-
-    const popCount = Math.floor(Math.random() * 2) + 1;
-    for (let i = 0; i < popCount; i++) {
-      const delay = i * 0.08 + (Math.random() * 0.04);
-      const osc = this.ctx.createOscillator();
-      const gain = this.ctx.createGain();
-      const filter = this.ctx.createBiquadFilter();
-
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(140 + Math.random() * 60, t + delay);
-      osc.frequency.exponentialRampToValueAtTime(30, t + delay + 0.06);
-
-      filter.type = 'lowpass';
-      filter.frequency.setValueAtTime(450, t + delay);
-
-      gain.gain.setValueAtTime(0.35, t + delay);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + delay + 0.07);
-
-      osc.connect(filter);
-      filter.connect(gain);
-      gain.connect(this.sfxGain);
-
-      osc.start(t + delay);
-      osc.stop(t + delay + 0.07);
-    }
-  }
-
-  makeDistortionCurve(amount = 20) {
-    const k = typeof amount === 'number' ? amount : 20;
-    const n_samples = 44100;
-    const curve = new Float32Array(n_samples);
-    const deg = Math.PI / 180;
-    for (let i = 0; i < n_samples; ++i) {
-      const x = (i * 2) / n_samples - 1;
-      curve[i] = ((3 + k) * x * 20 * deg) / (Math.PI + k * Math.abs(x));
-    }
-    return curve;
-  }
-
-  createNoiseBuffer() {
-    if (!this.ctx) return null;
-    const bufferSize = this.ctx.sampleRate * 2;
-    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-    const data = buffer.getChannelData(0);
-    for (let i = 0; i < bufferSize; i++) {
-      data[i] = Math.random() * 2 - 1;
-    }
-    return buffer;
+  pauseTrackSafe(track) {
+    if (!track) return;
+    try {
+      track.pause();
+    } catch (e) {}
   }
 
   /**

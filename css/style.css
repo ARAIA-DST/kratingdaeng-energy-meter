@@ -582,326 +582,362 @@ body {
   100% { transform: scale(1.02); filter: brightness(1.3); }
 }
 
-/* ==================== KRATINGDAENG ENERGI PIT - ENERGY FUEL GAUGE ==================== */
-.energy-pit-chassis {
+/* ==================== SPEEDOMETER 180° VISUAL ARENA ==================== */
+.speedometer-arena {
   width: 100%;
-  max-width: 480px;
-  background: 
-    radial-gradient(circle at 50% 40%, rgba(14, 28, 64, 0.9) 0%, rgba(6, 12, 28, 0.98) 75%),
-    repeating-linear-gradient(45deg, #09132b 0px, #09132b 2px, #050a16 2px, #050a16 6px);
-  border: 3px solid rgba(255, 255, 255, 0.2);
-  border-radius: 22px;
-  padding: 14px 12px 18px 12px;
-  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.85), inset 0 2px 12px rgba(255, 255, 255, 0.15);
   display: flex;
   flex-direction: column;
   align-items: center;
   position: relative;
-  margin: 4px 0 10px 0;
-  overflow: hidden;
+  margin: 4px 0 8px 0;
 }
 
-/* 4 Corner Hex Chrome Bolts */
-.chassis-bolt {
-  position: absolute;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: radial-gradient(circle, #e2e8f0 0%, #94a3b8 60%, #475569 100%);
-  border: 1px solid #1e293b;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.8), inset 0 1px 2px #fff;
-  z-index: 10;
-}
-
-.bolt-tl { top: 10px; left: 10px; }
-.bolt-tr { top: 10px; right: 10px; }
-.bolt-bl { bottom: 10px; left: 10px; }
-.bolt-br { bottom: 10px; right: 10px; }
-
-/* Corner Racing Badges */
-.chassis-badge {
-  position: absolute;
-  z-index: 8;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.badge-top-left {
-  top: 10px;
-  left: 28px;
-}
-
-.chassis-logo-img {
-  height: 28px;
-  width: auto;
-  object-fit: contain;
-  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.6));
-}
-
-.badge-top-right {
-  top: 8px;
-  right: 28px;
-}
-
-.racing-shield-svg {
-  width: 32px;
-  height: 32px;
-  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.6));
-}
-
-.badge-bottom-left {
-  bottom: 12px;
-  left: 26px;
-}
-
-.racing-bull-tag {
-  width: 32px;
-  height: 22px;
-  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.6));
-}
-
-/* Header Title Bar Atas (Persis Gambar Referensi) */
-.fuel-gauge-title-bar {
-  text-align: center;
-  margin-top: 2px;
-  margin-bottom: 6px;
-  z-index: 5;
-}
-
-.title-pit-main {
-  font-size: 15px;
-  font-weight: 900;
-  font-style: italic;
-  color: #fff;
-  letter-spacing: 1px;
-  text-shadow: 0 2px 8px rgba(0, 229, 255, 0.6);
-}
-
-.title-pit-sub {
-  font-size: 15px;
-  font-weight: 900;
-  font-style: italic;
-  color: #ffd700;
-  letter-spacing: 1px;
-  text-shadow: 0 0 10px rgba(255, 215, 0, 0.8);
-}
-
-/* INSTRUMENT CLUSTER CONTAINER */
-.instrument-cluster-wrap {
+.speedometer-box {
   width: 100%;
+  max-width: 400px;
+  background: radial-gradient(circle at 50% 85%, #0f224a 0%, #08132b 60%, #040916 100%);
+  border: 2px solid rgba(255, 215, 0, 0.35);
+  border-radius: 20px;
+  padding: 10px 14px 16px 14px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7), inset 0 2px 8px rgba(255, 255, 255, 0.1);
   display: flex;
-  justify-content: center;
+  flex-direction: column;
   align-items: center;
   position: relative;
-  z-index: 4;
 }
 
-.tachometer-svg {
+.speedometer-svg {
   width: 100%;
-  max-width: 440px;
-  height: auto;
+  max-height: 230px;
   overflow: visible;
-  filter: drop-shadow(0 8px 18px rgba(0,0,0,0.8));
+  filter: drop-shadow(0 4px 12px rgba(0,0,0,0.8));
 }
 
-/* Sektor Hadiah Luar (Outer Prize Slots) */
-.prize-slot-wedge {
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.slot-text-label {
-  font-size: 10.5px;
-  font-weight: 800;
-  fill: #cbd5e1;
+.gauge-sector-label {
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
   text-anchor: middle;
-  dominant-baseline: central;
 }
 
-.slot-text-label.gold-lbl {
-  fill: #ffd700;
-  font-weight: 900;
-  font-size: 11.5px;
-}
+.tier3-lbl { fill: #34d399; }
+.tier2-lbl { fill: #38bdf8; }
+.tier1-lbl { fill: #f87171; }
 
-/* Sorotan Aktif Sektor (Seperti Kaos di Gambar!) */
-.prize-slot-wedge.active-slot .slot-bg-arc {
-  stroke: rgba(245, 158, 11, 0.5) !important;
-  stroke-width: 48px;
-  filter: drop-shadow(0 0 12px #ffd700);
-}
-
-.prize-slot-wedge.active-slot .slot-text-label {
-  fill: #ffffff;
-  font-weight: 900;
-  text-shadow: 0 0 8px #ffd700;
-}
-
-/* Skala Angka RPM (0 s/d 10) */
-.rpm-num {
-  font-size: 19px;
-  font-weight: 900;
-  fill: #ffffff;
-  text-anchor: middle;
-  dominant-baseline: central;
-  font-family: 'Segoe UI', Impact, sans-serif;
-}
-
-.rpm-num.rpm-red {
-  fill: #ff3344;
-  text-shadow: 0 0 8px rgba(255, 23, 68, 0.8);
-}
-
-/* Label Teks Tengah Dial */
-.dial-center-title {
+.speed-tick-num {
   font-size: 11px;
   font-weight: 800;
-  fill: #94a3b8;
-  letter-spacing: 1px;
+  fill: #e2e8f0;
   text-anchor: middle;
+  dominant-baseline: central;
 }
 
-.dial-center-action {
-  font-size: 13.5px;
+.speed-tick-num.redline {
+  fill: #ff3344;
   font-weight: 900;
-  font-style: italic;
-  fill: #ffd700;
-  letter-spacing: 0.8px;
-  text-anchor: middle;
-  text-shadow: 0 0 12px rgba(255, 215, 0, 0.8);
-  animation: promptPulse 1s infinite alternate;
 }
 
-@keyframes promptPulse {
-  0% { opacity: 0.85; transform: scale(0.99); }
-  100% { opacity: 1; transform: scale(1.02); filter: drop-shadow(0 0 8px #ffd700); }
-}
-
-/* Horizontal LED Fuel Bar */
-.fuel-led {
-  opacity: 0.22;
-  transition: opacity 0.05s ease, filter 0.05s ease;
-}
-
-.fuel-led.active {
-  opacity: 1;
-}
-
-.fuel-led.led-green.active {
-  fill: #10b981;
-  filter: drop-shadow(0 0 4px #10b981);
-}
-
-.fuel-led.led-yellow.active {
-  fill: #ffd700;
-  filter: drop-shadow(0 0 5px #ffd700);
-}
-
-.fuel-led.led-red.active {
-  fill: #ff1744;
-  filter: drop-shadow(0 0 6px #ff1744);
-}
-
-/* Tachometer Needle */
-#tachometer-needle-group {
-  transition: transform 0.04s linear;
+/* Jarum Speedometer (Smooth transition during deceleration) */
+#speedometer-needle-group {
+  transition: transform 0.05s linear;
   will-change: transform;
 }
 
-#tachometer-needle-group.decelerating {
-  transition: transform 0.1s cubic-bezier(0.2, 0.85, 0.35, 1);
+#speedometer-needle-group.decelerating {
+  transition: transform 0.1s cubic-bezier(0.2, 0.8, 0.3, 1);
 }
 
-/* ==================== TOMBOL BESAR MERAH: PRESS & HOLD ==================== */
-/* Persis seperti tombol merah menyala di gambar referensi! */
-.refuel-btn-wrapper {
+/* Dashboard Readout Panel */
+.dashboard-readout-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: -15px;
+  position: relative;
+  z-index: 5;
+}
+
+.digital-speed-wrap {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.speed-digital-number {
+  font-size: 38px;
+  font-weight: 900;
+  color: var(--gold);
+  text-shadow: 0 0 16px rgba(255, 215, 0, 0.7);
+  letter-spacing: 1px;
+  line-height: 1;
+}
+
+.speed-digital-unit {
+  font-size: 14px;
+  font-weight: 800;
+  color: #94a3b8;
+  letter-spacing: 1px;
+}
+
+/* ODOMETER ROLLING BOX (Tampilan Odometer Digital) */
+.odometer-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+.odometer-label {
+  font-size: 9px;
+  font-weight: 800;
+  color: #64748b;
+  letter-spacing: 1.5px;
+}
+
+.odometer-rolling-box {
+  display: inline-flex;
+  align-items: center;
+  background: #020612;
+  border: 1.5px solid rgba(255, 215, 0, 0.3);
+  border-radius: 6px;
+  padding: 3px 6px;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.9);
+}
+
+.odo-digit {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  width: 17px;
+  height: 22px;
+  background: #070d1e;
+  color: #fff;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 15px;
+  font-weight: 900;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.8);
+}
+
+.odo-digit:last-of-type {
+  border-right: none;
+  background: #1e293b;
+  color: #ffd700;
+}
+
+.odo-unit-tag {
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--gold);
+  margin-left: 5px;
+}
+
+/* Live Target Zone Badge */
+.zone-status-badge {
+  font-size: 11px;
+  font-weight: 800;
+  padding: 4px 14px;
+  border-radius: 20px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  transition: all 0.2s ease;
+}
+
+.zone-status-badge.zone-idle {
+  background: rgba(255, 255, 255, 0.08);
+  color: #94a3b8;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.zone-status-badge.zone-tier3 {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+  border: 1px solid #10b981;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
+}
+
+.zone-status-badge.zone-tier2 {
+  background: rgba(2, 132, 199, 0.2);
+  color: #38bdf8;
+  border: 1px solid #0284c7;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.4);
+}
+
+.zone-status-badge.zone-tier1 {
+  background: rgba(239, 68, 68, 0.25);
+  color: #ffd700;
+  border: 1px solid #ef4444;
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.6);
+  animation: bannerFlash 0.4s infinite alternate;
+}
+
+/* ==================== PROGRESS CHARGE TAHAN GAS ==================== */
+.hold-gauge-container {
+  width: 100%;
+  background: rgba(14, 28, 64, 0.7);
+  border: 1px solid rgba(255, 215, 0, 0.25);
+  border-radius: 12px;
+  padding: 8px 14px;
+  margin: 8px 0;
+}
+
+.hold-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.hold-instruction-text {
+  font-size: 11px;
+  font-weight: 800;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.hold-duration-val {
+  font-size: 14px;
+  font-weight: 900;
+  color: var(--gold);
+}
+
+.hold-charge-track {
+  width: 100%;
+  height: 10px;
+  background: #050b18;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.hold-charge-bar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #00e5ff 0%, #ffd700 70%, #ff1744 100%);
+  border-radius: 6px;
+  transition: width 0.05s linear;
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.6);
+}
+
+/* ==================== PEDAL GAS (PRESS & HOLD) ==================== */
+.pedal-control-area {
   width: 100%;
   display: flex;
   justify-content: center;
-  align-items: center;
-  margin-top: 2px;
-  margin-bottom: 4px;
-  z-index: 10;
+  margin-top: 6px;
+  margin-bottom: 8px;
 }
 
-.neon-red-glow-frame {
+.btn-pedal-gas {
   width: 100%;
-  max-width: 390px;
-  padding: 5px;
-  border-radius: 24px;
-  background: transparent;
-  border: 3px solid #ff1744;
-  box-shadow: 
-    0 0 15px rgba(255, 23, 68, 0.7),
-    inset 0 0 15px rgba(255, 23, 68, 0.5),
-    0 4px 20px rgba(0, 0, 0, 0.8);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  animation: redNeonBlink 1.8s infinite alternate;
-}
-
-@keyframes redNeonBlink {
-  0% { box-shadow: 0 0 12px rgba(255, 23, 68, 0.6), inset 0 0 10px rgba(255, 23, 68, 0.4); }
-  100% { box-shadow: 0 0 24px rgba(255, 23, 68, 0.9), inset 0 0 16px rgba(255, 23, 68, 0.7); }
-}
-
-.btn-refuel-glow {
-  width: 100%;
-  height: 82px;
+  max-width: 380px;
+  height: 95px;
+  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+  border: 3px solid rgba(255, 215, 0, 0.5);
   border-radius: 18px;
-  border: 2px solid #ff4d6d;
-  background: linear-gradient(180deg, #ff2a4b 0%, #d90429 45%, #99001a 100%);
   color: #ffffff;
   cursor: pointer;
+  box-shadow: 0 8px 0 #050b18, 0 12px 25px rgba(0, 0, 0, 0.8), inset 0 2px 4px rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.08s ease;
+  position: relative;
+  touch-action: manipulation;
+  overflow: hidden;
+}
+
+.btn-pedal-gas:active,
+.btn-pedal-gas.pressing {
+  transform: translateY(6px);
+  border-color: #ffd700;
+  box-shadow: 0 2px 0 #050b18, 0 4px 15px rgba(255, 215, 0, 0.6), inset 0 2px 15px rgba(255, 23, 68, 0.5);
+  background: linear-gradient(180deg, #7f1d1d 0%, #450a0a 100%);
+}
+
+.pedal-surface {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 18px;
+  position: relative;
+}
+
+.pedal-treads {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 24px;
+}
+
+.tread-bar {
+  height: 4px;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 2px;
+}
+
+.btn-pedal-gas.pressing .tread-bar {
+  background: var(--gold);
+  box-shadow: 0 0 6px var(--gold);
+}
+
+.pedal-content {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  box-shadow: 
-    inset 0 3px 6px rgba(255, 255, 255, 0.5),
-    inset 0 -3px 8px rgba(0, 0, 0, 0.7),
-    0 4px 10px rgba(0, 0, 0, 0.6);
-  transition: all 0.08s ease;
-  touch-action: manipulation;
-  user-select: none;
-  position: relative;
-  overflow: hidden;
+  flex: 1;
 }
 
-.btn-refuel-glow:active,
-.btn-refuel-glow.pressing {
-  transform: translateY(3px) scale(0.985);
-  background: linear-gradient(180deg, #ff4766 0%, #ef233c 50%, #700010 100%);
-  box-shadow: 
-    inset 0 2px 10px rgba(255, 215, 0, 0.6),
-    0 0 20px rgba(255, 23, 68, 0.9);
+.pedal-speed-icon {
+  width: 26px;
+  height: 26px;
+  color: var(--gold);
+  margin-bottom: 2px;
+  filter: drop-shadow(0 0 6px rgba(255, 215, 0, 0.5));
 }
 
-.btn-line-top {
-  font-size: 19px;
+.btn-pedal-gas.pressing .pedal-speed-icon {
+  color: #ff3344;
+  filter: drop-shadow(0 0 10px #ff1744);
+  animation: pedalIconRev 0.15s infinite alternate;
+}
+
+@keyframes pedalIconRev {
+  0% { transform: scale(1) rotate(-5deg); }
+  100% { transform: scale(1.15) rotate(5deg); }
+}
+
+.pedal-title {
+  font-size: 20px;
   font-weight: 900;
-  font-style: italic;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  color: #ffffff;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
-}
-
-.btn-line-bottom {
-  font-size: 22px;
-  font-weight: 900;
-  font-style: italic;
   letter-spacing: 2px;
   text-transform: uppercase;
-  color: #ffffff;
-  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.9);
+  color: #fff;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.8);
 }
 
-.btn-refuel-glow.pressing .btn-line-bottom {
-  color: #ffd700;
-  text-shadow: 0 0 12px rgba(255, 215, 0, 0.8);
+.btn-pedal-gas.pressing .pedal-title {
+  color: var(--gold);
+  text-shadow: 0 0 12px var(--gold-glow);
+}
+
+.pedal-subtitle {
+  font-size: 10px;
+  font-weight: 700;
+  color: #94a3b8;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.btn-pedal-gas.pressing .pedal-subtitle {
+  color: #ffe066;
 }
 
 /* ==================== PRIZE REVEALED CARD (RESULT SCREEN) ==================== */

@@ -24,11 +24,6 @@ class SpeedGauge {
  <linearGradient id="gSg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd24a"/><stop offset="1" stop-color="#d89a00"/></linearGradient>
  <filter id="gGlow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
 <circle cx="300" cy="300" r="296" fill="url(#gCh)"/><circle cx="300" cy="300" r="282" fill="#14181d"/>
-<image href="assets/logo.png" x="20" y="12" width="92" height="40" preserveAspectRatio="xMinYMid meet"/>`;
-    this.items.forEach((p, i) => {
-      const a0 = -130 + i * W + 1, a1 = -130 + (i + 1) * W - 1, ro = 276, ri = 196;
-      const o0 = P(ro, a0), o1 = P(ro, a1), i1 = P(ri, a1), i0 = P(ri, a0), m = (a0 + a1) / 2, q = P(236, m);
-      h += `<path class="g-sec" d="M${o0[0]} ${o0[1]}A${ro} ${ro} 0 0 1 ${o1[0]} ${o1[1]}L${i1[0]} ${i1[1]}A${ri} ${ri} 0 0 0 ${i0[0]} ${i0[1]}Z" fill="url(#gSb)" stroke="#0a2744" stroke-width="2"/>
 <g transform="translate(${q[0]} ${q[1]}) rotate(${m * .75})"><text class="g-ico" id="g-ico-${i}" y="-8">${p.i}</text><text class="g-lbl" id="g-lbl-${i}" y="20">${p.n}</text></g>`;
     });
     h += `<circle cx="300" cy="300" r="186" fill="url(#gCh)"/><circle cx="300" cy="300" r="176" fill="#05090e"/><circle cx="300" cy="300" r="168" fill="url(#gFace)"/>`;

@@ -582,7 +582,7 @@ body {
   100% { transform: scale(1.02); filter: brightness(1.3); }
 }
 
-/* ==================== SPEEDOMETER 180° VISUAL ARENA ==================== */
+/* ==================== SPEEDOMETER 180° VISUAL ARENA (SPIN WHEEL DESIGN) ==================== */
 .speedometer-arena {
   width: 100%;
   display: flex;
@@ -594,57 +594,122 @@ body {
 
 .speedometer-box {
   width: 100%;
-  max-width: 400px;
-  background: radial-gradient(circle at 50% 85%, #0f224a 0%, #08132b 60%, #040916 100%);
-  border: 2px solid rgba(255, 215, 0, 0.35);
-  border-radius: 20px;
-  padding: 10px 14px 16px 14px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7), inset 0 2px 8px rgba(255, 255, 255, 0.1);
+  max-width: 420px;
+  background: radial-gradient(circle at 50% 88%, #0f2347 0%, #08142c 55%, #030712 100%);
+  border: 2px solid rgba(255, 215, 0, 0.45);
+  border-radius: 24px;
+  padding: 12px 14px 16px 14px;
+  box-shadow: 
+    0 14px 35px rgba(0, 0, 0, 0.85),
+    inset 0 2px 10px rgba(255, 255, 255, 0.12),
+    0 0 20px rgba(255, 215, 0, 0.12);
   display: flex;
   flex-direction: column;
   align-items: center;
   position: relative;
+  overflow: hidden;
+}
+
+/* Glass Reflection Highlight (Automotive Curved Crystal Glass) */
+.gauge-glass-glare {
+  position: absolute;
+  top: 8px;
+  left: 14px;
+  right: 14px;
+  height: 125px;
+  border-radius: 190px 190px 0 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.13) 0%, rgba(255, 255, 255, 0.02) 65%, transparent 100%);
+  pointer-events: none;
+  z-index: 4;
 }
 
 .speedometer-svg {
   width: 100%;
-  max-height: 230px;
+  max-height: 240px;
   overflow: visible;
-  filter: drop-shadow(0 4px 12px rgba(0,0,0,0.8));
+  filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.8));
+  position: relative;
+  z-index: 2;
 }
 
-.gauge-sector-label {
-  font-size: 10px;
+/* Wedge Sectors on the Half-Circle Spin Wheel */
+.spin-wedge {
+  transition: opacity 0.25s ease, filter 0.25s ease;
+  cursor: default;
+}
+
+.spin-wedge.wedge-t3 {
+  opacity: 0.88;
+}
+
+.spin-wedge.wedge-t2 {
+  opacity: 0.92;
+}
+
+.spin-wedge.wedge-t1 {
+  opacity: 0.98;
+}
+
+.spin-wedge.active-sector {
+  opacity: 1;
+  filter: brightness(1.25) drop-shadow(0 0 10px rgba(255, 215, 0, 0.7));
+}
+
+/* Curved Sector Labels Inside the Wheel */
+.wheel-sector-labels {
+  pointer-events: none;
+  user-select: none;
+}
+
+.wheel-wedge-text {
+  font-family: 'Montserrat', system-ui, -apple-system, sans-serif;
+  font-size: 8px;
   font-weight: 900;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.8px;
   text-anchor: middle;
+  text-transform: uppercase;
 }
 
-.tier3-lbl { fill: #34d399; }
-.tier2-lbl { fill: #38bdf8; }
-.tier1-lbl { fill: #f87171; }
+.wheel-wedge-text.text-t3 {
+  fill: #6ee7b7;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.9));
+}
 
+.wheel-wedge-text.text-t2 {
+  fill: #bae6fd;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.9));
+}
+
+.wheel-wedge-text.text-t1 {
+  fill: #ffd700;
+  filter: drop-shadow(0 0 4px rgba(255, 215, 0, 0.8));
+}
+
+/* Speedometer Radial Numbers & Ticks */
 .speed-tick-num {
+  font-family: 'Montserrat', system-ui, -apple-system, sans-serif;
   font-size: 11px;
   font-weight: 800;
-  fill: #e2e8f0;
+  fill: #f1f5f9;
   text-anchor: middle;
   dominant-baseline: central;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.9));
 }
 
 .speed-tick-num.redline {
   fill: #ff3344;
   font-weight: 900;
+  filter: drop-shadow(0 0 5px rgba(255, 51, 68, 0.7));
 }
 
-/* Jarum Speedometer (Smooth transition during deceleration) */
+/* Jarum Speedometer Supercar 3D */
 #speedometer-needle-group {
-  transition: transform 0.05s linear;
+  transition: transform 0.04s linear;
   will-change: transform;
 }
 
 #speedometer-needle-group.decelerating {
-  transition: transform 0.1s cubic-bezier(0.2, 0.8, 0.3, 1);
+  transition: transform 0.08s cubic-bezier(0.2, 0.8, 0.25, 1);
 }
 
 /* Dashboard Readout Panel */
@@ -654,7 +719,7 @@ body {
   align-items: center;
   gap: 8px;
   width: 100%;
-  margin-top: -15px;
+  margin-top: -14px;
   position: relative;
   z-index: 5;
 }
@@ -666,22 +731,23 @@ body {
 }
 
 .speed-digital-number {
-  font-size: 38px;
+  font-size: 40px;
   font-weight: 900;
   color: var(--gold);
-  text-shadow: 0 0 16px rgba(255, 215, 0, 0.7);
+  text-shadow: 0 0 18px rgba(255, 215, 0, 0.75), 0 2px 4px rgba(0, 0, 0, 0.9);
   letter-spacing: 1px;
   line-height: 1;
+  font-variant-numeric: tabular-nums;
 }
 
 .speed-digital-unit {
   font-size: 14px;
   font-weight: 800;
   color: #94a3b8;
-  letter-spacing: 1px;
+  letter-spacing: 1.5px;
 }
 
-/* ODOMETER ROLLING BOX (Tampilan Odometer Digital) */
+/* ODOMETER DIGITAL (Rolling Mileage Display) */
 .odometer-container {
   display: flex;
   flex-direction: column;
@@ -693,32 +759,33 @@ body {
   font-size: 9px;
   font-weight: 800;
   color: #64748b;
-  letter-spacing: 1.5px;
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
 }
 
 .odometer-rolling-box {
   display: inline-flex;
   align-items: center;
   background: #020612;
-  border: 1.5px solid rgba(255, 215, 0, 0.3);
+  border: 1.5px solid rgba(255, 215, 0, 0.35);
   border-radius: 6px;
   padding: 3px 6px;
-  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.9);
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.9), 0 2px 6px rgba(0, 0, 0, 0.5);
 }
 
 .odo-digit {
   display: inline-flex;
   justify-content: center;
   align-items: center;
-  width: 17px;
-  height: 22px;
+  width: 18px;
+  height: 23px;
   background: #070d1e;
   color: #fff;
   font-family: 'Courier New', Courier, monospace;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 900;
-  border-right: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: inset 0 1px 3px rgba(0,0,0,0.8);
+  border-right: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.85);
 }
 
 .odo-digit:last-of-type {
@@ -732,17 +799,18 @@ body {
   font-weight: 800;
   color: var(--gold);
   margin-left: 5px;
+  letter-spacing: 1px;
 }
 
 /* Live Target Zone Badge */
 .zone-status-badge {
   font-size: 11px;
   font-weight: 800;
-  padding: 4px 14px;
+  padding: 5px 16px;
   border-radius: 20px;
   letter-spacing: 0.8px;
   text-transform: uppercase;
-  transition: all 0.2s ease;
+  transition: all 0.25s ease;
 }
 
 .zone-status-badge.zone-idle {
@@ -769,175 +837,145 @@ body {
   background: rgba(239, 68, 68, 0.25);
   color: #ffd700;
   border: 1px solid #ef4444;
-  box-shadow: 0 0 15px rgba(239, 68, 68, 0.6);
+  box-shadow: 0 0 16px rgba(239, 68, 68, 0.6);
   animation: bannerFlash 0.4s infinite alternate;
 }
 
-/* ==================== PROGRESS CHARGE TAHAN GAS ==================== */
-.hold-gauge-container {
-  width: 100%;
-  background: rgba(14, 28, 64, 0.7);
-  border: 1px solid rgba(255, 215, 0, 0.25);
-  border-radius: 12px;
-  padding: 8px 14px;
-  margin: 8px 0;
-}
-
-.hold-label-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 6px;
-}
-
-.hold-instruction-text {
-  font-size: 11px;
-  font-weight: 800;
-  color: #94a3b8;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.hold-duration-val {
-  font-size: 14px;
-  font-weight: 900;
-  color: var(--gold);
-}
-
-.hold-charge-track {
-  width: 100%;
-  height: 10px;
-  background: #050b18;
-  border-radius: 6px;
-  overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.hold-charge-bar {
-  height: 100%;
-  width: 0%;
-  background: linear-gradient(90deg, #00e5ff 0%, #ffd700 70%, #ff1744 100%);
-  border-radius: 6px;
-  transition: width 0.05s linear;
-  box-shadow: 0 0 10px rgba(0, 229, 255, 0.6);
-}
-
-/* ==================== PEDAL GAS (PRESS & HOLD) ==================== */
-.pedal-control-area {
+/* ==================== TOMBOL SINGLE-CLICK SPIN WHEEL (SUPERCAR IGNITION TRIGGER) ==================== */
+.spin-trigger-area {
   width: 100%;
   display: flex;
   justify-content: center;
-  margin-top: 6px;
+  margin-top: 10px;
   margin-bottom: 8px;
 }
 
-.btn-pedal-gas {
+.btn-spin-wheel {
   width: 100%;
-  max-width: 380px;
-  height: 95px;
-  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
-  border: 3px solid rgba(255, 215, 0, 0.5);
-  border-radius: 18px;
+  max-width: 400px;
+  height: 90px;
+  background: radial-gradient(ellipse at 50% 15%, #1e293b 0%, #0d172a 60%, #070d1a 100%);
+  border: 2px solid rgba(255, 215, 0, 0.6);
+  border-radius: 20px;
   color: #ffffff;
   cursor: pointer;
-  box-shadow: 0 8px 0 #050b18, 0 12px 25px rgba(0, 0, 0, 0.8), inset 0 2px 4px rgba(255, 255, 255, 0.2);
+  box-shadow: 
+    0 8px 0 #050b18, 
+    0 14px 28px rgba(0, 0, 0, 0.8), 
+    inset 0 2px 8px rgba(255, 255, 255, 0.18),
+    0 0 18px rgba(255, 215, 0, 0.25);
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.08s ease;
   position: relative;
   touch-action: manipulation;
   overflow: hidden;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.2s ease, background 0.2s ease;
+  user-select: none;
 }
 
-.btn-pedal-gas:active,
-.btn-pedal-gas.pressing {
-  transform: translateY(6px);
+.btn-spin-wheel:hover:not(:disabled) {
+  transform: translateY(-2px);
   border-color: #ffd700;
-  box-shadow: 0 2px 0 #050b18, 0 4px 15px rgba(255, 215, 0, 0.6), inset 0 2px 15px rgba(255, 23, 68, 0.5);
-  background: linear-gradient(180deg, #7f1d1d 0%, #450a0a 100%);
+  box-shadow: 
+    0 10px 0 #050b18, 
+    0 18px 32px rgba(0, 0, 0, 0.9), 
+    inset 0 2px 10px rgba(255, 255, 255, 0.25),
+    0 0 25px rgba(255, 215, 0, 0.45);
 }
 
-.pedal-surface {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 18px;
-  position: relative;
+.btn-spin-wheel:active:not(:disabled) {
+  transform: translateY(5px);
+  box-shadow: 
+    0 3px 0 #050b18, 
+    0 6px 16px rgba(0, 0, 0, 0.8), 
+    inset 0 2px 14px rgba(255, 215, 0, 0.4);
 }
 
-.pedal-treads {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  width: 24px;
+.btn-spin-glow-ring {
+  position: absolute;
+  inset: -2px;
+  border-radius: 22px;
+  background: radial-gradient(circle at 50% 50%, rgba(255, 215, 0, 0.15) 0%, transparent 70%);
+  pointer-events: none;
+  opacity: 0.6;
+  transition: opacity 0.3s ease;
 }
 
-.tread-bar {
-  height: 4px;
-  width: 100%;
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 2px;
+.btn-spin-wheel:hover:not(:disabled) .btn-spin-glow-ring {
+  opacity: 1;
 }
 
-.btn-pedal-gas.pressing .tread-bar {
-  background: var(--gold);
-  box-shadow: 0 0 6px var(--gold);
-}
-
-.pedal-content {
+.btn-spin-content {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  flex: 1;
+  position: relative;
+  z-index: 2;
+  gap: 3px;
 }
 
-.pedal-speed-icon {
+.spin-icon-svg {
   width: 26px;
   height: 26px;
   color: var(--gold);
-  margin-bottom: 2px;
-  filter: drop-shadow(0 0 6px rgba(255, 215, 0, 0.5));
+  filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.6));
+  transition: transform 0.3s ease;
 }
 
-.btn-pedal-gas.pressing .pedal-speed-icon {
-  color: #ff3344;
-  filter: drop-shadow(0 0 10px #ff1744);
-  animation: pedalIconRev 0.15s infinite alternate;
+.btn-spin-wheel:hover:not(:disabled) .spin-icon-svg {
+  transform: rotate(45deg);
 }
 
-@keyframes pedalIconRev {
-  0% { transform: scale(1) rotate(-5deg); }
-  100% { transform: scale(1.15) rotate(5deg); }
-}
-
-.pedal-title {
-  font-size: 20px;
+.btn-spin-title {
+  font-size: 19px;
   font-weight: 900;
   letter-spacing: 2px;
   text-transform: uppercase;
   color: #fff;
-  text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.6), 0 2px 4px rgba(0, 0, 0, 0.8);
 }
 
-.btn-pedal-gas.pressing .pedal-title {
-  color: var(--gold);
-  text-shadow: 0 0 12px var(--gold-glow);
-}
-
-.pedal-subtitle {
+.btn-spin-sub {
   font-size: 10px;
   font-weight: 700;
   color: #94a3b8;
-  letter-spacing: 0.5px;
+  letter-spacing: 1px;
   text-transform: uppercase;
 }
 
-.btn-pedal-gas.pressing .pedal-subtitle {
-  color: #ffe066;
+/* State Tombol Saat Sedang Berputar (Spinning) */
+.btn-spin-wheel.spinning {
+  background: radial-gradient(ellipse at 50% 15%, #3b1010 0%, #1f0707 60%, #0d0202 100%);
+  border-color: #ff1744;
+  cursor: not-allowed;
+  transform: translateY(2px);
+  box-shadow: 
+    0 6px 0 #050b18, 
+    0 10px 24px rgba(0, 0, 0, 0.8), 
+    inset 0 2px 14px rgba(255, 23, 68, 0.4),
+    0 0 25px rgba(255, 23, 68, 0.5);
+}
+
+.btn-spin-wheel.spinning .spin-icon-svg {
+  color: #ff1744;
+  filter: drop-shadow(0 0 10px #ff1744);
+  animation: spinWheelIcon 0.8s linear infinite;
+}
+
+.btn-spin-wheel.spinning .btn-spin-title {
+  color: #ffd700;
+  text-shadow: 0 0 14px rgba(255, 215, 0, 0.8);
+}
+
+.btn-spin-wheel.spinning .btn-spin-sub {
+  color: #fca5a5;
+}
+
+@keyframes spinWheelIcon {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 /* ==================== PRIZE REVEALED CARD (RESULT SCREEN) ==================== */

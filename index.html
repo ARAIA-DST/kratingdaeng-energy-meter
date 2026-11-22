@@ -1,16 +1,37 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Kratingdaeng Red Bull - Speedometer Spin Wheel 180°</title>
-  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@1,800&family=Barlow:wght@600;700&display=swap" rel="stylesheet">
+
+  <!-- Google Web Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@1,800&family=Barlow:wght@600;700;800;900&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
-  <link rel="icon" href="assets/logo.png">
+
+  <!-- Favicon Rasio Asli (Square canvas padded agar tidak ter-press / pipih di tab browser) -->
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+  <link rel="icon" type="image/png" sizes="192x192" href="assets/favicon.png">
+  <link rel="apple-touch-icon" href="assets/icon-192.png">
+
+  <!-- PWA Manifest & Mobile Capability (Android, iOS Safari, Tablet, Desktop) -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#050b18">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="KTD Spin">
 </head>
+
 <body>
 
-  <!-- Main Container -->
+  <!-- Main Multi-Fit Container -->
   <div id="app-container">
     <!-- Canvas Visual FX (Partikel, Sparks, Confetti) -->
     <canvas id="fx-canvas"></canvas>
@@ -18,121 +39,152 @@
     <!-- Top Bar -->
     <header class="top-bar">
       <div class="brand-badge">
-        <img src="assets/logo.png" alt="Kratingdaeng Red Bull" class="brand-logo-img">
+        <img src="assets/logo.png" alt="Kratingdaeng Red Bull Logo" class="brand-logo-img">
         <span class="brand-title-small">KRATINGDAENG</span>
       </div>
 
       <div class="top-actions">
-                <button id="btn-toggle-mute" class="btn-icon active" aria-label="Suara dan musik">
-          <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <!-- Tombol Instal Aplikasi PWA -->
+        <button id="btn-install-app" class="btn-icon btn-install" aria-label="Instal Aplikasi Microsite">
+          <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          <span class="btn-action-text">INSTAL APP</span>
+        </button>
+
+        <!-- Tombol Buka Pengaturan & Icon Hadiah Drive -->
+        <button id="btn-open-settings" class="btn-icon" aria-label="Atur Icon Hadiah & Backend">
+          <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path
+              d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+            </path>
+          </svg>
+          <span class="btn-action-text">ATUR ICON</span>
+        </button>
+
+        <!-- Tombol Suara On / Off -->
+        <button id="btn-toggle-mute" class="btn-icon active" aria-label="Suara dan musik">
+          <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
             <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
             <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
             <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
           </svg>
-          <span>SUARA ON</span>
+          <span class="btn-action-text">SUARA ON</span>
         </button>
       </div>
     </header>
 
     <!-- ==================== 1. START SCREEN ==================== -->
     <main id="start-screen" class="screen">
-      <!-- Logo Kratingdaeng Resmi -->
-      <div class="hero-emblem">
-        <img src="assets/logo.png" alt="Kratingdaeng Red Bull" class="hero-logo-img">
-      </div>
-
-      <h1 class="main-title">SPEEDOMETER <span>SPIN WHEEL</span></h1>
-      <p class="sub-title">Tekan & Tahan Gas Untuk Memutar Speedometer & Menangkan Hadiah Eksklusif!</p>
-
-      <!-- Panel Pengaturan Pemain & Booth -->
-      <div class="card-panel">
-        <div class="input-group">
-          <label class="input-label" for="player-name-input">Nama Peserta:</label>
-          <input type="text" id="player-name-input" class="custom-input" placeholder="Masukkan Nama Lengkap..." maxlength="25" value="Jagoan Kratingdaeng">
-        </div>
-
-        <label class="input-label">Lokasi Booth Aktif:</label>
-        <div class="location-selector">
-          <!-- Lokasi diatur oleh admin di backend (google-apps-script/Code.gs → CONFIG.BOOTH_LOCATION) -->
-          <div class="location-display-badge" id="location-active-badge">
-            <span class="loc-badge" id="loc-badge-num">BOOTH 1</span>
-            <span class="loc-title" id="loc-title-text">Rest Area (RA)</span>
-            <span class="loc-item-hint" id="loc-hint-text">Khusus Tongkat Tol</span>
-          </div>
-          <!-- Pill hidden dipakai agar DOM reference tetap ada di game.js -->
-          <button class="location-pill selected" data-location="RA" style="display:none;"></button>
-          <button class="location-pill" data-location="Pelabuhan" style="display:none;"></button>
-        </div>
-
-        <!-- Tabel Hadiah Lucky Dip -->
-        <div class="prize-showcase-box">
-          <div class="prize-showcase-title">SEKTOR HADIAH SPIN WHEEL SPEEDOMETER</div>
-          
-          <div class="tier-card tier-card-1">
-            <div class="tier-card-header">
-              <span class="tier-tag tag-t1">TIER 1 — 10% (REDLINE 162-180 KM/H)</span>
-              <span class="tier-ratio-tag">Rasio 1 : 1</span>
-            </div>
-            <div class="tier-items-list">
-              <span class="prize-chip gold">Kaos Eksklusif</span>
-              <span class="prize-chip gold">Topi Kratingdaeng</span>
-            </div>
+      <div class="start-screen-grid">
+        <!-- Kolom Kiri: Hero & Masuk Arena -->
+        <div class="start-col-hero">
+          <!-- Logo Kratingdaeng Resmi dengan rasio aspek terjaga -->
+          <div class="hero-emblem">
+            <img src="assets/logo.png" alt="Kratingdaeng Red Bull" class="hero-logo-img">
           </div>
 
-          <div class="tier-card tier-card-2">
-            <div class="tier-card-header">
-              <span class="tier-tag tag-t2">TIER 2 — 30% (ZONA BIRU 108-162 KM/H)</span>
-              <span class="tier-ratio-tag">Rasio 2 : 3 : 4</span>
-            </div>
-            <div class="tier-items-list">
-              <span class="prize-chip blue">Payung Lipat</span>
-              <span class="prize-chip blue">Jas Hujan</span>
-              <span id="tier2-dynamic-item" class="prize-chip blue active-loc">Tongkat Tol (Khusus RA)</span>
-            </div>
-          </div>
+          <h1 class="main-title">SPEEDOMETER <span>SPIN WHEEL</span></h1>
+          <p class="sub-title">Klik Satu Kali Untuk Memutar Speedometer &amp; Menangkan Hadiah Eksklusif Lucky Dip!</p>
 
-          <div class="tier-card tier-card-3">
-            <div class="tier-card-header">
-              <span class="tier-tag tag-t3">TIER 3 — 60% (ZONA HIJAU 0-108 KM/H)</span>
-              <span class="tier-ratio-tag">Pasti Dapat</span>
+          <!-- Panel Pengaturan Pemain & Booth -->
+          <div class="card-panel">
+            <div class="input-group">
+              <label class="input-label" for="player-name-input">Nama Peserta:</label>
+              <input type="text" id="player-name-input" class="custom-input" placeholder="Masukkan Nama Lengkap..."
+                maxlength="25" value="Jagoan Kratingdaeng">
             </div>
-            <div class="tier-items-list">
-              <span class="prize-chip green">Shopping Bag Kratingdaeng</span>
+
+            <label class="input-label">Lokasi Booth Aktif:</label>
+            <div class="location-selector">
+              <div class="location-display-badge" id="location-active-badge">
+                <span class="loc-badge" id="loc-badge-num">BOOTH 1</span>
+                <span class="loc-title" id="loc-title-text">Rest Area (RA)</span>
+                <span class="loc-item-hint" id="loc-hint-text">Khusus Tongkat Tol</span>
+              </div>
             </div>
+
+            <button id="btn-start-game" class="btn-cta">
+              <span>MASUK ARENA SPEEDOMETER</span>
+            </button>
           </div>
         </div>
 
-        <button id="btn-start-game" class="btn-cta">
-          <span>MASUK ARENA SPEEDOMETER</span>
-        </button>
-      </div>
+        <!-- Kolom Kanan: Sektor Hadiah & Riwayat Pemenang -->
+        <div class="start-col-info">
+          <!-- Tabel Hadiah Lucky Dip -->
+          <div class="prize-showcase-box">
+            <div class="prize-showcase-title">SEKTOR HADIAH SPIN WHEEL SPEEDOMETER</div>
 
-      <!-- Preview Leaderboard / Riwayat Pemenang -->
-      <div class="leaderboard-container card-panel">
-        <div class="leaderboard-title">
-          <span>RIWAYAT PEMENANG LUCKY DIP</span>
-          <button id="btn-refresh-leaderboard" class="btn-icon" style="padding: 4px 10px; font-size: 11px;">
-            <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;">
-              <polyline points="23 4 23 10 17 10"></polyline>
-              <polyline points="1 20 1 14 7 14"></polyline>
-              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
-            </svg>
-            Segarkan
-          </button>
+            <div class="tier-card tier-card-1">
+              <div class="tier-card-header">
+                <span class="tier-tag tag-t1">TIER 1 — 10% (REDLINE 162-180 KM/H)</span>
+                <span class="tier-ratio-tag">Rasio 1 : 1</span>
+              </div>
+              <div class="tier-items-list">
+                <span class="prize-chip gold">Kaos Eksklusif</span>
+                <span class="prize-chip gold">Topi Kratingdaeng</span>
+              </div>
+            </div>
+
+            <div class="tier-card tier-card-2">
+              <div class="tier-card-header">
+                <span class="tier-tag tag-t2">TIER 2 — 30% (ZONA BIRU 108-162 KM/H)</span>
+                <span class="tier-ratio-tag">Rasio 2 : 3 : 4</span>
+              </div>
+              <div class="tier-items-list">
+                <span class="prize-chip blue">Payung Lipat</span>
+                <span class="prize-chip blue">Jas Hujan</span>
+                <span id="tier2-dynamic-item" class="prize-chip blue active-loc">Tongkat Tol (Khusus RA)</span>
+              </div>
+            </div>
+
+            <div class="tier-card tier-card-3">
+              <div class="tier-card-header">
+                <span class="tier-tag tag-t3">TIER 3 — 60% (ZONA HIJAU 0-108 KM/H)</span>
+                <span class="tier-ratio-tag">Pasti Dapat</span>
+              </div>
+              <div class="tier-items-list">
+                <span class="prize-chip green">Shopping Bag Kratingdaeng</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Preview Leaderboard / Riwayat Pemenang -->
+          <div class="leaderboard-container card-panel">
+            <div class="leaderboard-title">
+              <span>RIWAYAT PEMENANG LUCKY DIP</span>
+              <button id="btn-refresh-leaderboard" class="btn-icon" style="padding: 4px 10px; font-size: 11px;">
+                <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;">
+                  <polyline points="23 4 23 10 17 10"></polyline>
+                  <polyline points="1 20 1 14 7 14"></polyline>
+                  <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                </svg>
+                Segarkan
+              </button>
+            </div>
+            <table class="lb-table">
+              <thead>
+                <tr>
+                  <th class="rank-col">#</th>
+                  <th>Nama</th>
+                  <th style="text-align: right;">Speed</th>
+                  <th>Hadiah Dimenangkan</th>
+                </tr>
+              </thead>
+              <tbody id="leaderboard-rows">
+                <!-- Diisi otomatis oleh JavaScript -->
+              </tbody>
+            </table>
+          </div>
         </div>
-        <table class="lb-table">
-          <thead>
-            <tr>
-              <th class="rank-col">#</th>
-              <th>Nama</th>
-              <th style="text-align: right;">Speed</th>
-              <th>Hadiah Dimenangkan</th>
-            </tr>
-          </thead>
-          <tbody id="leaderboard-rows">
-            <!-- Diisi otomatis oleh JavaScript -->
-          </tbody>
-        </table>
       </div>
     </main>
 
@@ -142,7 +194,7 @@
       <div class="hud-bar">
         <div class="hud-stat">
           <span class="hud-label">PESERTA</span>
-          <span id="hud-player-display" class="hud-val gold">Banteng Juara</span>
+          <span id="hud-player-display" class="hud-val gold">Jagoan Kratingdaeng</span>
         </div>
         <div class="hud-stat" style="align-items: center;">
           <span class="hud-label">BOOTH LOKASI</span>
@@ -156,19 +208,20 @@
 
       <!-- Live Notification Banner -->
       <div id="overcharge-banner" class="overcharge-banner">
-        TEKAN &amp; TAHAN TOMBOL GAS SAMPAI PENUH!
+        KLIK TOMBOL SPIN WHEEL UNTUK MEMUTAR SPEEDOMETER!
       </div>
 
-      <!-- SPEEDOMETER BARU (RPM / FUEL GAUGE) - dirender oleh js/gauge.js -->
+      <!-- SPEEDOMETER RPM & FUEL GAUGE - SVG Dikelola oleh js/gauge.js -->
       <div class="gauge-box">
-        <svg id="gauge-svg" class="gauge-svg" viewBox="0 0 600 500" role="img" aria-label="Speedometer RPM dan fuel gauge"></svg>
+        <svg id="gauge-svg" class="gauge-svg" viewBox="0 0 600 500" role="img"
+          aria-label="Speedometer Spin Wheel"></svg>
       </div>
 
-      <!-- SATU TOMBOL UTAMA: TEKAN & TAHAN (juga bisa tombol Spasi / Enter) -->
+      <!-- SATU TOMBOL UTAMA: SINGLE-CLICK SPIN WHEEL (juga bisa Spasi / Enter) -->
       <div class="spin-trigger-area">
-        <button id="btn-spin-wheel" class="btn-gas" type="button" aria-label="Tekan dan tahan untuk gas pol">
-          <span class="btn-spin-title" id="btn-spin-text">PRESS &amp; HOLD:</span>
-          <span class="btn-spin-sub" id="btn-spin-subtext">GAS POL / REFUEL</span>
+        <button id="btn-spin-wheel" class="btn-gas" type="button" aria-label="Klik satu kali untuk memutar speedometer">
+          <span class="btn-spin-title" id="btn-spin-text">KLIK UNTUK PUTAR:</span>
+          <span class="btn-spin-sub" id="btn-spin-subtext">SPIN WHEEL SPEEDOMETER</span>
         </button>
       </div>
     </section>
@@ -177,14 +230,15 @@
     <section id="game-over-screen" class="screen hidden">
       <div class="result-header">
         <div class="result-badge-icon">
-          <img src="assets/logo.png" alt="Kratingdaeng Logo" style="height: 48px; width: auto; object-fit: contain;">
+          <img src="assets/logo.png" alt="Kratingdaeng Logo" class="result-logo-img">
         </div>
-        <h2 style="color:#ffd700; text-transform:uppercase; font-size:20px; letter-spacing:1px; margin-top:5px;">HASIL SPEEDOMETER SPIN WHEEL</h2>
-        
+        <h2 style="color:#ffd700; text-transform:uppercase; font-size:20px; letter-spacing:1px; margin-top:5px;">HASIL
+          SPEEDOMETER SPIN WHEEL</h2>
+
         <!-- Big Prize Reveal Card -->
         <div class="prize-revealed-card">
           <div id="res-prize-icon-box" class="prize-artwork-box">
-            <!-- Dynamic SVG Icon diisi JavaScript -->
+            <!-- Dynamic Icon (Custom JPG dari Drive atau Fallback SVG) -->
           </div>
           <div class="prize-tagline">SELAMAT! ANDA MENDAPATKAN:</div>
           <div id="res-prize-name" class="prize-hero-title">Shopping Bag Kratingdaeng</div>
@@ -202,7 +256,7 @@
             <div class="stat-box-lbl">Speed Jarum</div>
           </div>
           <div class="stat-box">
-            <div id="res-hold-time" class="stat-box-val">4.2s</div>
+            <div id="res-hold-time" class="stat-box-val">1 Klik (13.7s)</div>
             <div class="stat-box-lbl">Durasi Spin</div>
           </div>
           <div class="stat-box">
@@ -219,14 +273,16 @@
         <!-- Link Sertifikat Google Drive -->
         <div id="cert-link-container" class="hidden">
           <a id="btn-view-cert" href="#" target="_blank" class="cert-btn">
-            <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
               <polyline points="14 2 14 8 20 8"></polyline>
               <line x1="16" y1="13" x2="8" y2="13"></line>
               <line x1="16" y1="17" x2="8" y2="17"></line>
             </svg>
             <span>Lihat Sertifikat Digital di Google Drive</span>
-            <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;">
+            <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;">
               <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
               <polyline points="15 3 21 3 21 9"></polyline>
               <line x1="10" y1="14" x2="21" y2="3"></line>
@@ -236,7 +292,8 @@
 
         <div class="result-actions">
           <button id="btn-share-result" class="btn-secondary">
-            <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
               <circle cx="18" cy="5" r="3"></circle>
               <circle cx="6" cy="12" r="3"></circle>
               <circle cx="18" cy="19" r="3"></circle>
@@ -246,7 +303,8 @@
             BAGIKAN
           </button>
           <button id="btn-play-again" class="btn-cta" style="flex: 1.5; padding: 14px;">
-            <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
               <path d="M1 4v6h6"></path>
               <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
             </svg>
@@ -261,20 +319,166 @@
       <div id="countdown-text" class="countdown-text">3</div>
     </div>
 
-    <!-- ==================== 5. SETTINGS MODAL (Info Koneksi Backend — Hanya Admin) ==================== -->
+    <!-- ==================== 5. SETTINGS MODAL ==================== -->
     <div id="settings-modal" class="modal-overlay hidden">
       <div class="modal-card">
         <div class="modal-header">
-          <h3 class="modal-title">Info Integrasi Backend</h3>
+          <h3 class="modal-title">Pengaturan &amp; Icon Hadiah</h3>
           <button id="btn-close-settings" class="btn-close">&times;</button>
         </div>
 
-        <div class="info-box">
-          <strong>Konfigurasi Backend:</strong> URL Google Apps Script dan Lokasi Booth diatur oleh admin langsung di file <em>js/api.js</em> (variabel <code>SCRIPT_URL</code>) dan <em>google-apps-script/Code.gs</em> (variabel <code>CONFIG.BOOTH_LOCATION</code>). Tidak perlu diisi dari sini.
+        <!-- Tab Navigasi Modal -->
+        <div class="modal-tabs">
+          <button class="modal-tab-btn active" data-tab="icons">Icon Hadiah (JPG Drive)</button>
+          <button class="modal-tab-btn" data-tab="install">Instal Aplikasi</button>
+          <button class="modal-tab-btn" data-tab="backend">Info Backend</button>
         </div>
 
-        <div style="font-size:12px; color:#64748b; padding: 8px 0;">
-          Semua data Lucky Dip otomatis tersimpan ke Google Sheet &amp; Drive setelah peserta memutar speedometer.
+        <!-- TAB 1: CUSTOM ICON HADIAH JPG DARI GOOGLE DRIVE -->
+        <div id="tab-icons" class="modal-tab-content active">
+          <div class="info-box">
+            <strong>Atur Gambar JPG dari Google Drive:</strong> Tempelkan link share file JPG dari Google Drive (misal:
+            <code>https://drive.google.com/file/d/.../view</code>). Sistem otomatis mengonversinya menjadi URL gambar
+            langsung untuk speedometer dan hasil undian.
+          </div>
+
+          <div class="prize-config-list">
+            <!-- Kaos Eksklusif -->
+            <div class="prize-config-item">
+              <div class="prize-config-thumb" id="preview-img-tshirt">👕</div>
+              <div class="prize-config-inputs">
+                <label class="prize-config-label">1. Kaos Eksklusif (Tier 1):</label>
+                <input type="text" id="input-img-tshirt" class="custom-input compact-input"
+                  placeholder="Tempel link JPG Drive Kaos...">
+              </div>
+            </div>
+
+            <!-- Topi Kratingdaeng -->
+            <div class="prize-config-item">
+              <div class="prize-config-thumb" id="preview-img-cap">🧢</div>
+              <div class="prize-config-inputs">
+                <label class="prize-config-label">2. Topi Kratingdaeng (Tier 1):</label>
+                <input type="text" id="input-img-cap" class="custom-input compact-input"
+                  placeholder="Tempel link JPG Drive Topi...">
+              </div>
+            </div>
+
+            <!-- Payung Lipat -->
+            <div class="prize-config-item">
+              <div class="prize-config-thumb" id="preview-img-umbrella">☂️</div>
+              <div class="prize-config-inputs">
+                <label class="prize-config-label">3. Payung Lipat (Tier 2):</label>
+                <input type="text" id="input-img-umbrella" class="custom-input compact-input"
+                  placeholder="Tempel link JPG Drive Payung...">
+              </div>
+            </div>
+
+            <!-- Jas Hujan -->
+            <div class="prize-config-item">
+              <div class="prize-config-thumb" id="preview-img-raincoat">🧥</div>
+              <div class="prize-config-inputs">
+                <label class="prize-config-label">4. Jas Hujan (Tier 2):</label>
+                <input type="text" id="input-img-raincoat" class="custom-input compact-input"
+                  placeholder="Tempel link JPG Drive Jas Hujan...">
+              </div>
+            </div>
+
+            <!-- Tongkat Tol (RA) -->
+            <div class="prize-config-item">
+              <div class="prize-config-thumb" id="preview-img-tolstick">🔦</div>
+              <div class="prize-config-inputs">
+                <label class="prize-config-label">5. Tongkat Tol (Khusus RA - Tier 2):</label>
+                <input type="text" id="input-img-tolstick" class="custom-input compact-input"
+                  placeholder="Tempel link JPG Drive Tongkat Tol...">
+              </div>
+            </div>
+
+            <!-- Cover Tas (Pelabuhan) -->
+            <div class="prize-config-item">
+              <div class="prize-config-thumb" id="preview-img-bagcover">🎒</div>
+              <div class="prize-config-inputs">
+                <label class="prize-config-label">6. Cover Tas (Khusus Pelabuhan - Tier 2):</label>
+                <input type="text" id="input-img-bagcover" class="custom-input compact-input"
+                  placeholder="Tempel link JPG Drive Cover Tas...">
+              </div>
+            </div>
+
+            <!-- Shopping Bag -->
+            <div class="prize-config-item">
+              <div class="prize-config-thumb" id="preview-img-shoppingbag">🛍️</div>
+              <div class="prize-config-inputs">
+                <label class="prize-config-label">7. Shopping Bag (Tier 3):</label>
+                <input type="text" id="input-img-shoppingbag" class="custom-input compact-input"
+                  placeholder="Tempel link JPG Drive Shopping Bag...">
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-actions" style="margin-top:14px;">
+            <button id="btn-save-prize-images" class="btn-cta" style="font-size:14px; padding:10px 14px; flex:2;">
+              SIMPAN ICON HADIAH
+            </button>
+            <button id="btn-reset-prize-images" class="btn-secondary" style="font-size:12px; padding:10px; flex:1;">
+              RESET
+            </button>
+          </div>
+        </div>
+
+        <!-- TAB 2: PANDUAN INSTALASI PWA -->
+        <div id="tab-install" class="modal-tab-content">
+          <div class="install-instructions-card">
+            <h4 style="color:#ffd700; margin-bottom:8px; font-size:14px;">Cara Menginstal Microsite di Berbagai Device:
+            </h4>
+
+            <div class="install-step-item">
+              <span class="device-icon">📱</span>
+              <div>
+                <strong>Android (Chrome / Edge / Samsung Internet):</strong>
+                <p>Klik tombol <em>"INSTAL APP"</em> di pojok kanan atas, atau buka menu browser (titik tiga ⋮) &gt;
+                  pilih <em>"Instal Aplikasi"</em> atau <em>"Tambahkan ke Layar Utama"</em>.</p>
+              </div>
+            </div>
+
+            <div class="install-step-item">
+              <span class="device-icon">🍏</span>
+              <div>
+                <strong>iPhone &amp; iPad (iOS Safari):</strong>
+                <p>Ketuk tombol <strong>Bagikan (Share)</strong> <svg viewBox="0 0 24 24" width="14" height="14"
+                    fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;">
+                    <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
+                    <polyline points="16 6 12 2 8 6"></polyline>
+                    <line x1="12" y1="2" x2="12" y2="15"></line>
+                  </svg> di bilah bawah Safari, lalu gulir ke bawah dan pilih <strong>"Tambah ke Layar Utama (Add to
+                    Home Screen)"</strong>.</p>
+              </div>
+            </div>
+
+            <div class="install-step-item">
+              <span class="device-icon">💻</span>
+              <div>
+                <strong>Desktop (Windows / macOS di Chrome / Edge):</strong>
+                <p>Klik ikon instal <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
+                    stroke-width="2" style="vertical-align:middle;">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                  </svg> di address bar browser sebelah kanan, lalu pilih <em>"Instal"</em>.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 3: INFO BACKEND -->
+        <div id="tab-backend" class="modal-tab-content">
+          <div class="info-box">
+            <strong>Konfigurasi Backend Google Apps Script:</strong>
+            URL Web App dan Lokasi Booth diatur oleh admin di file <em>js/api.js</em> (<code>SCRIPT_URL</code>) dan
+            <em>google-apps-script/Code.gs</em> (<code>CONFIG.BOOTH_LOCATION</code>).
+          </div>
+          <div style="font-size:12px; color:#94a3b8; line-height:1.6;">
+            Data skor, tier hadiah, nama peserta, dan link sertifikat otomatis terakumulasi di Google Sheet &amp; Drive
+            saat peserta memutar speedometer.
+          </div>
         </div>
       </div>
     </div>
@@ -285,7 +489,9 @@
   <script src="js/audio.js"></script>
   <script src="js/particles.js"></script>
   <script src="js/api.js"></script>
+  <script src="js/prizes-config.js"></script>
   <script src="js/gauge.js"></script>
   <script src="js/game.js"></script>
 </body>
+
 </html>

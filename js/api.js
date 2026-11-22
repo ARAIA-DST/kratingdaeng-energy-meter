@@ -165,26 +165,6 @@ class ApiService {
   }
 
   /**
-   * Konfigurasi ikon & nama hadiah dari sheet "Hadiah" (gambar JPG di Google Drive).
-   * Disimpan di localStorage agar tetap tampil saat offline.
-   */
-  async getPrizeConfig() {
-    const KEY = 'KRATINGDAENG_PRIZE_CFG';
-    const cached = () => { try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch (e) { return []; } };
-    if (!this.hasValidUrl()) return cached();
-    try {
-      const resp = await fetch(`${this.scriptUrl}?action=getPrizeConfig&t=${Date.now()}`, { cache: 'no-store' });
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-      const data = await resp.json();
-      if (data && data.status === 'success' && Array.isArray(data.prizes)) {
-        try { localStorage.setItem(KEY, JSON.stringify(data.prizes)); } catch (e) {}
-        return data.prizes;
-      }
-    } catch (e) { console.warn('Gagal memuat konfigurasi hadiah, memakai cache/emoji:', e); }
-    return cached();
-  }
-
-  /**
    * Tes Koneksi Google Apps Script (dipanggil dari admin tool jika dibutuhkan)
    */
   async testConnection(testUrl) {

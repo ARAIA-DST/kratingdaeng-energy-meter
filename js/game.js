@@ -3,15 +3,12 @@
  * KRATINGDAENG SPEEDOMETER SPIN WHEEL 180° - CORE GAME LOGIC
  * ===================================================================================
  * Fitur & Spesifikasi:
- * 1. Desain Roda Putar Setengah Lingkaran (180° Spin Wheel Speedometer / Odometer)
- * 2. SINGLE-CLICK TRIGGER (1 kali klik langsung memutar speedometer)
- * 3. Tampilan Speedometer Mewah, Modern, Realistis & Elegan
- * 4. Sektor Roda & Rasio Kemenangan Lucky Dip:
- *    - Tier 1 — 10%: Kaos Eksklusif dan Topi (1:1) [Zona Redline 162-180 KM/H]
- *    - Tier 2 — 30%: Payung Lipat, Jas Hujan, Tongkat Tol (RA) / Cover Tas (Pelabuhan) (2:3:4) [Zona Biru 108-162 KM/H]
- *    - Tier 3 — 60%: Shopping Bag saja [Zona Hijau 0-108 KM/H]
- * 5. Audio Multi-Layer Real Engine Sound (on_low, on_midhigh, on_high, off_midhigh, off_lower)
- * 6. Integrasi Google Sheets & Google Drive Otomatis
+ * 1. Single-Click Trigger: Satu klik langsung memutar speedometer (tidak lagi press & hold)
+ * 2. Suara Resmi: Audi V8 Acceleration Sound (assets/audio/acceleration.mp3)
+ * 3. Custom Icon Hadiah JPG dari Google Drive via window.prizeManager
+ * 4. PWA Ready: Bisa diinstal di Android, iOS, Tablet, dan Desktop
+ * 5. Tampilan Multi-Fit Responsive menyesuaikan perangkat
+ * 6. Rasio Logo Asli di browser tab (favicon) & antarmuka
  * ===================================================================================
  */
 
@@ -20,31 +17,21 @@ class KratingdaengGame {
     // State Game
     this.state = 'INIT'; // INIT, COUNTDOWN, PLAYING, SPINNING, DECELERATING, GAMEOVER
     this.playerName = 'Jagoan Kratingdaeng';
-    this.location = 'RA'; // Default; akan diambil dari backend saat init
+    this.location = 'RA'; // Default; diambil dari backend saat init
 
-    // Speedometer 180° State
-    // Sudut jarum: -90° (0 KM/H, sisi kiri) s/d +90° (180 KM/H, sisi kanan)
+    // Speedometer State
     this.currentAngle = -90;
     this.currentSpeed = 0; // 0 - 180 KM/H
     this.peakSpeed = 0;
-    this.odometerMileage = 18420; // Kilometrage dasar
+    this.odometerMileage = 18420;
     this.lastTickSpeed = 0;
-    this.gasHeld = false;
-    this.holdRpm = 0;
-    this.holdRaf = null;
-    this.cycIdx = -1;
-    this.cycLast = 0;
-    this.cycPlan = [];
-    this.cycStep = 0;
-    this.cycWin = 0;
 
-    // Single-Click Spin Timing (Total 15 detik sesuai urutan audio)
-    // Timeline audio: off_lower(0-1.5s) → on_low(1.5-4.5s) → on_midhigh(4.5-8s) → on_high(8-11.5s) → off_midhigh(11.5-13.5s) → off_lower(13.5-15s)
+    // Single-Click Spin Timing (Total 13.69 detik selaras dengan audio akselerasi Audi V8)
     this.isSpinning = false;
     this.spinStartTime = 0;
-    this.spinFastDuration = 9500;   // 0s-9.5s: fase putaran cepat (mesin naik on_low→on_midhigh→on_high)
-    this.spinDecelDuration = 5500;  // 9.5s-15s: fase deselerasi (on_high turun→off_midhigh→off_lower)
-    this.spinTotalDuration = this.spinFastDuration + this.spinDecelDuration; // = 15.0 detik
+    this.spinFastDuration = 8800;   // 0s - 8.8s: putaran cepat, jarum melesat & bergoyang
+    this.spinDecelDuration = 4890;  // 8.8s - 13.69s: fase deselerasi halus & mengunci target
+    this.spinTotalDuration = this.spinFastDuration + this.spinDecelDuration; // 13.69 detik
     this.decelStartAngle = 0;
     this.hasSwitchedToDecel = false;
 
@@ -53,12 +40,22 @@ class KratingdaengGame {
     this.targetSpeed = 0;
     this.activePrize = null;
 
+    // Sector Animation Tracking
+    this.cycIdx = -1;
+    this.cycLast = 0;
+    this.cycPlan = [];
+    this.cycStep = 0;
+    this.cycWin = 0;
+
     // RAF Loop
     this.loopRaf = null;
     this.lastLoopTime = 0;
 
     // Inisialisasi DOM Elements Cache
     this.initDOMElements();
+
+    // Inisialisasi PWA Installer
+    this.initPWAInstaller();
 
     // Ambil lokasi booth & konfigurasi dari backend
     this.loadBoothConfigFromBackend();
@@ -86,9 +83,14 @@ class KratingdaengGame {
       startBtn: document.getElementById('btn-start-game'),
       restartBtn: document.getElementById('btn-play-again'),
       muteBtn: document.getElementById('btn-toggle-mute'),
+      installBtn: document.getElementById('btn-install-app'),
       settingsBtn: document.getElementById('btn-open-settings'),
       settingsModal: document.getElementById('settings-modal'),
       closeSettingsBtn: document.getElementById('btn-close-settings'),
+
+      // Settings Modal Elements
+      btnSavePrizeImages: document.getElementById('btn-save-prize-images'),
+      btnResetPrizeImages: document.getElementById('btn-reset-prize-images'),
 
       // HUD Stats
       hudPlayerDisplay: document.getElementById('hud-player-display'),
@@ -125,9 +127,32 @@ class KratingdaengGame {
       // Canvas
       canvas: document.getElementById('fx-canvas')
     };
+  }
 
-    if (this.dom.scriptUrlInput) {
-      this.dom.scriptUrlInput.value = window.apiService.getScriptUrl();
+  initPWAInstaller() {
+    this.deferredPrompt = null;
+
+    // Tangkap prompt instalasi PWA standar (Android, Chrome, Edge)
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      this.deferredPrompt = e;
+      if (this.dom.installBtn) {
+        this.dom.installBtn.classList.remove('hidden');
+        this.dom.installBtn.title = 'Instal Aplikasi di Perangkat Ini';
+      }
+    });
+
+    // Registrasi Service Worker untuk kapabilitas PWA & Offline
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then((reg) => {
+            console.log('PWA ServiceWorker terdaftar:', reg.scope);
+          })
+          .catch((err) => {
+            console.warn('Registrasi ServiceWorker gagal:', err);
+          });
+      });
     }
   }
 
@@ -139,14 +164,10 @@ class KratingdaengGame {
       if (e.key === 'Enter') this.initAudioAndStart();
     });
 
-    // Lokasi Booth: Diatur oleh backend (Google Apps Script) via loadBoothConfigFromBackend()
-    // Selector hanya tampilan informasi, tidak bisa diklik manual oleh pemain
-
     // Tombol Main Lagi
     this.dom.restartBtn.addEventListener('click', () => this.showStartScreen());
 
     // Audio & Mute Controls
-    // SATU tombol suara: musik latar + efek suara sekaligus
     this.dom.muteBtn.addEventListener('click', () => {
       window.soundSystem.ensureContext();
       const isMuted = window.soundSystem.toggleMute();
@@ -155,20 +176,51 @@ class KratingdaengGame {
         : '<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>';
       this.dom.muteBtn.innerHTML = `${icon} <span>${isMuted ? 'SUARA OFF' : 'SUARA ON'}</span>`;
       this.dom.muteBtn.classList.toggle('active', !isMuted);
-      if (isMuted) window.soundSystem.stopBGM();
-      else if (this.state === 'PLAYING' || this.state === 'COUNTDOWN') window.soundSystem.startBGM();
     });
 
-    // Settings Modal (hanya menampilkan info koneksi backend untuk referensi admin)
-    if (this.dom.settingsBtn) {
-      this.dom.settingsBtn.addEventListener('click', () => {
-        if (this.dom.settingsModal) this.dom.settingsModal.classList.remove('hidden');
+    // Tombol Install PWA
+    if (this.dom.installBtn) {
+      this.dom.installBtn.addEventListener('click', async () => {
+        if (this.deferredPrompt) {
+          this.deferredPrompt.prompt();
+          const { outcome } = await this.deferredPrompt.userChoice;
+          if (outcome === 'accepted') {
+            this.dom.installBtn.classList.add('hidden');
+          }
+          this.deferredPrompt = null;
+        } else {
+          // Buka panduan instalasi (terutama iOS Safari / manual desktop)
+          this.openSettingsModal('install');
+        }
       });
     }
+
+    // Settings Modal
+    if (this.dom.settingsBtn) {
+      this.dom.settingsBtn.addEventListener('click', () => this.openSettingsModal());
+    }
     if (this.dom.closeSettingsBtn) {
-      this.dom.closeSettingsBtn.addEventListener('click', () => {
-        if (this.dom.settingsModal) this.dom.settingsModal.classList.add('hidden');
+      this.dom.closeSettingsBtn.addEventListener('click', () => this.closeSettingsModal());
+    }
+
+    // Tab switcher di modal settings
+    document.querySelectorAll('.modal-tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const targetTab = btn.dataset.tab;
+        document.querySelectorAll('.modal-tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.modal-tab-content').forEach(c => c.classList.remove('active'));
+        btn.classList.add('active');
+        const content = document.getElementById(`tab-${targetTab}`);
+        if (content) content.classList.add('active');
       });
+    });
+
+    // Simpan Icon Hadiah dari Google Drive
+    if (this.dom.btnSavePrizeImages) {
+      this.dom.btnSavePrizeImages.addEventListener('click', () => this.saveCustomPrizeImages());
+    }
+    if (this.dom.btnResetPrizeImages) {
+      this.dom.btnResetPrizeImages.addEventListener('click', () => this.resetCustomPrizeImages());
     }
 
     if (this.dom.refreshLbBtn) {
@@ -180,106 +232,118 @@ class KratingdaengGame {
     }
 
     // =========================================================================
-    // MEKANIK INTERAKSI: SATU TOMBOL TEKAN & TAHAN (sentuh / mouse / Spasi / Enter)
+    // MEKANIK INTERAKSI SINGLE-CLICK: SATU KALI KLIK UNTUK MEMUTAR SPEEDOMETER
     // =========================================================================
-    const gas = this.dom.spinWheelBtn;
-    if (gas) {
-      gas.addEventListener('pointerdown', (e) => {
+    const spinBtn = this.dom.spinWheelBtn;
+    if (spinBtn) {
+      spinBtn.addEventListener('click', (e) => {
         e.preventDefault();
-        try { gas.setPointerCapture(e.pointerId); } catch (_) {}
-        this.gasPress();
+        window.soundSystem.ensureContext();
+        if (this.state === 'PLAYING' && !this.isSpinning) {
+          this.triggerSpin();
+        }
       });
-      ['pointerup', 'pointercancel'].forEach(ev => gas.addEventListener(ev, () => this.gasRelease()));
-      gas.addEventListener('contextmenu', (e) => e.preventDefault());
     }
+
+    // Tombol Keyboard (Spasi atau Enter)
     window.addEventListener('keydown', (e) => {
-      if (this.state === 'PLAYING' && (e.code === 'Space' || e.code === 'Enter')) {
+      if (this.state === 'PLAYING' && !this.isSpinning && (e.code === 'Space' || e.code === 'Enter')) {
         e.preventDefault();
-        if (!e.repeat) this.gasPress();
-      }
-    });
-    window.addEventListener('keyup', (e) => {
-      if (e.code === 'Space' || e.code === 'Enter') this.gasRelease();
-    });
-    window.addEventListener('blur', () => this.gasRelease());
-  }
-
-  // ---- Tekan & tahan gas: jarum naik sampai penuh, lalu memicu putaran ----
-  gasPress() {
-    if (this.state !== 'PLAYING') return;
-    window.soundSystem.ensureContext();
-    this.gasHeld = true;
-    if (this.dom.spinWheelBtn) this.dom.spinWheelBtn.classList.add('down');
-  }
-
-  gasRelease() {
-    this.gasHeld = false;
-    if (this.dom.spinWheelBtn) this.dom.spinWheelBtn.classList.remove('down');
-  }
-
-  holdTick(t) {
-    if (this.state !== 'PLAYING') { this.holdRaf = null; return; }
-    const dt = Math.min(0.05, (t - (this.holdLast || t)) / 1000);
-    this.holdLast = t;
-    const gauge = window.gauge;
-    if (this.gasHeld) {
-      this.holdRpm = Math.min(10, this.holdRpm + (10 / 1.6) * dt * (1 + this.holdRpm / 25));
-      gauge.setStatus(this.holdRpm < 7 ? 'REVVING...' : 'KEEP HOLDING!');
-      this.dom.hudGasStatus.textContent = 'GAS DITEKAN!';
-      this.holdSecT = (this.holdSecT || 0) + dt;
-      if (this.holdSecT > Math.max(0.05, 0.32 - this.holdRpm * 0.028)) {
-        this.holdSecT = 0;
-        this.cycIdx = (this.cycIdx + 1) % gauge.N;
-        gauge.highlight(this.cycIdx);
-        window.soundSystem.playNeedleTick(0.8 + this.holdRpm / 10 * 0.6);
-      }
-      if (this.holdRpm >= 9.98) {
-        this.gasRelease();
-        this.holdRaf = null;
+        window.soundSystem.ensureContext();
         this.triggerSpin();
-        return;
       }
-    } else if (this.holdRpm > 0) {
-      this.holdRpm = Math.max(0, this.holdRpm - 3.2 * dt);
-      if (this.holdRpm === 0) {
-        gauge.setStatus('PRESS TO REFUE!');
-        this.dom.hudGasStatus.textContent = 'SIAP PUTAR!';
-        gauge.clear();
-      }
+    });
+  }
+
+  openSettingsModal(defaultTab = 'icons') {
+    if (!this.dom.settingsModal) return;
+    this.populatePrizeImageInputs();
+
+    // Aktifkan tab yang dipilih
+    document.querySelectorAll('.modal-tab-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.tab === defaultTab);
+    });
+    document.querySelectorAll('.modal-tab-content').forEach(c => {
+      c.classList.toggle('active', c.id === `tab-${defaultTab}`);
+    });
+
+    this.dom.settingsModal.classList.remove('hidden');
+  }
+
+  closeSettingsModal() {
+    if (this.dom.settingsModal) {
+      this.dom.settingsModal.classList.add('hidden');
     }
-    const jit = this.gasHeld && this.holdRpm > 1 ? Math.sin(t / 40) * 0.07 : 0;
-    gauge.setValue(this.holdRpm + jit);
-    this.holdRaf = requestAnimationFrame((x) => this.holdTick(x));
+  }
+
+  populatePrizeImageInputs() {
+    if (!window.prizeManager) return;
+    const prizes = window.prizeManager.getAllPrizes();
+    Object.keys(prizes).forEach(key => {
+      const input = document.getElementById(`input-img-${key}`);
+      const preview = document.getElementById(`preview-img-${key}`);
+      if (input) {
+        input.value = window.prizeManager.getRawImageUrl(key);
+      }
+      if (preview) {
+        const directUrl = window.prizeManager.getDirectImageUrl(key);
+        if (directUrl) {
+          preview.innerHTML = `<img src="${directUrl}" alt="${prizes[key].name}" style="width:100%; height:100%; object-fit:contain; border-radius:6px;">`;
+        } else {
+          preview.innerHTML = `<span style="font-size:22px;">${prizes[key].emoji}</span>`;
+        }
+      }
+    });
+  }
+
+  saveCustomPrizeImages() {
+    if (!window.prizeManager) return;
+    const prizes = window.prizeManager.getAllPrizes();
+    Object.keys(prizes).forEach(key => {
+      const input = document.getElementById(`input-img-${key}`);
+      if (input) {
+        window.prizeManager.setImage(key, input.value);
+      }
+    });
+
+    window.prizeManager.saveToStorage();
+    if (window.gauge) window.gauge.refreshPrizeIcons();
+    this.populatePrizeImageInputs();
+
+    alert('Icon Hadiah berhasil disimpan! Speedometer telah diperbarui.');
+  }
+
+  resetCustomPrizeImages() {
+    if (!window.prizeManager) return;
+    if (confirm('Kembalikan semua icon ke emoji default?')) {
+      window.prizeManager.resetAll();
+      if (window.gauge) window.gauge.refreshPrizeIcons();
+      this.populatePrizeImageInputs();
+    }
   }
 
   initAudioAndStart() {
-    if (this.state !== 'INIT') return; // cegah countdown ganda
+    if (this.state !== 'INIT') return;
     window.soundSystem.ensureContext();
     const name = this.dom.nameInput.value.trim();
     this.playerName = name ? name : 'Jagoan Kratingdaeng';
     this.startCountdown();
   }
 
-  // =========================================================================
-  // AMBIL KONFIGURASI LOKASI BOOTH DARI BACKEND (Google Apps Script)
-  // =========================================================================
   async loadBoothConfigFromBackend() {
     try {
       const config = await window.apiService.getBoothConfig();
       if (config && config.location) {
-        this.location = config.location; // 'RA' atau 'Pelabuhan'
+        this.location = config.location;
       }
-      // Update tampilan badge di HUD jika game-screen sudah visible
       if (this.dom.hudLocationBadge) {
         this.dom.hudLocationBadge.textContent = this.location === 'RA' ? 'Rest Area (RA)' : 'Pelabuhan';
       }
-      // Update label chip Tier 2 di start screen
       if (this.dom.tier2DynamicItem) {
         this.dom.tier2DynamicItem.textContent = this.location === 'RA'
           ? 'Tongkat Tol (Khusus RA)'
           : 'Cover Tas (Khusus Pelabuhan)';
       }
-      // Update label di location-pill selector (hanya tampilkan yang aktif)
       this.updateLocationDisplay();
     } catch (e) {
       console.warn('Gagal memuat konfigurasi booth dari backend, menggunakan default RA:', e);
@@ -291,14 +355,7 @@ class KratingdaengGame {
     const lt = document.getElementById('loc-title-text'), lh = document.getElementById('loc-hint-text');
     if (lt) lt.textContent = this.location === 'RA' ? 'Rest Area (RA)' : 'Pelabuhan';
     if (lh) lh.textContent = this.location === 'RA' ? 'Khusus Tongkat Tol' : 'Khusus Cover Tas';
-    // Sembunyikan selector manual, tampilkan sebagai informasi saja
-    document.querySelectorAll('.location-pill').forEach(pill => {
-      pill.classList.remove('selected');
-      if (pill.dataset.location === this.location) {
-        pill.classList.add('selected');
-      }
-    });
-    // Update label tier2 dynamic item
+
     if (this.dom.tier2DynamicItem) {
       this.dom.tier2DynamicItem.textContent = this.location === 'RA'
         ? 'Tongkat Tol (Khusus RA)'
@@ -337,7 +394,7 @@ class KratingdaengGame {
         this.dom.countdownOverlay.classList.add('hidden');
         this.startMatch();
       }
-    }, 900);
+    }, 850);
   }
 
   startMatch() {
@@ -353,32 +410,22 @@ class KratingdaengGame {
     this.dom.hudLocationBadge.textContent = this.location === 'RA' ? 'Rest Area (RA)' : 'Pelabuhan';
     this.dom.hudGasStatus.textContent = 'SIAP PUTAR!';
     this.dom.hudGasStatus.style.color = '#ffd700';
-    this.dom.overchargeBanner.textContent = 'TEKAN & TAHAN TOMBOL GAS SAMPAI PENUH!';
+    this.dom.overchargeBanner.textContent = 'KLIK TOMBOL SPIN WHEEL UNTUK MEMUTAR SPEEDOMETER!';
 
-    // Reset Tombol Spin
+    // Reset Tombol Spin (Single-Click)
     if (this.dom.spinWheelBtn) {
       this.dom.spinWheelBtn.disabled = false;
       this.dom.spinWheelBtn.classList.remove('spinning');
     }
-    if (this.dom.btnSpinText) this.dom.btnSpinText.textContent = 'PRESS & HOLD:';
-    if (this.dom.btnSpinSubtext) this.dom.btnSpinSubtext.textContent = 'GAS POL / REFUEL';
+    if (this.dom.btnSpinText) this.dom.btnSpinText.textContent = 'KLIK UNTUK PUTAR:';
+    if (this.dom.btnSpinSubtext) this.dom.btnSpinSubtext.textContent = 'SPIN WHEEL SPEEDOMETER';
     if (this.dom.needleGroup) this.dom.needleGroup.classList.remove('decelerating');
 
     this.clearSectorHighlights();
-    this.gasHeld = false;
-    this.holdRpm = 0;
-    this.holdLast = 0;
     this.cycIdx = -1;
     this.updateLocationDisplay();
-    window.gauge.setStatus('PRESS TO REFUE!');
+    window.gauge.setStatus('KLIK UNTUK PUTAR!');
     this.updateSpeedometerVisual(-90, 0);
-
-    // Audio BGM
-    window.soundSystem.startBGM();
-
-    // Loop tekan & tahan
-    if (this.holdRaf) cancelAnimationFrame(this.holdRaf);
-    this.holdRaf = requestAnimationFrame((t) => this.holdTick(t));
   }
 
   // =========================================================================
@@ -408,15 +455,15 @@ class KratingdaengGame {
     this.targetAngle = this.activePrize.targetAngle;
     this.targetSpeed = this.activePrize.targetSpeed;
 
-    // Parameter Timing Putaran Roda (15 detik, sesuai urutan audio)
+    // Parameter Timing Putaran Roda (13.69 detik persis audio akselerasi Audi V8)
     this.spinStartTime = performance.now();
-    this.spinFastDuration = 9500;   // 0s-9.5s: putaran cepat (audio on_low→on_midhigh→on_high)
-    this.spinDecelDuration = 5500;  // 9.5s-15s: deselerasi (audio off_midhigh→off_lower)
-    this.spinTotalDuration = this.spinFastDuration + this.spinDecelDuration; // 15 detik total
+    this.spinFastDuration = 8800;   // 0s - 8.8s: putaran cepat berkecepatan tinggi
+    this.spinDecelDuration = 4890;  // 8.8s - 13.69s: deselerasi & penguncian target
+    this.spinTotalDuration = this.spinFastDuration + this.spinDecelDuration; // 13.69s total
     this.decelStartAngle = 90;
     this.hasSwitchedToDecel = false;
 
-    // Mulai sequence suara mesin 15 detik (off_lower→on_low→on_midhigh→on_high→off_midhigh→off_lower)
+    // Putar Suara Mesin Audi V8 Acceleration
     window.soundSystem.startSpinSequence();
 
     // Jalankan Loop Animasi Fisika RAF
@@ -436,9 +483,8 @@ class KratingdaengGame {
       const subRand = Math.random();
       const prizeItem = subRand < 0.5 ? 'Kaos Eksklusif Kratingdaeng' : 'Topi Kratingdaeng';
       const prizeType = subRand < 0.5 ? 'tshirt' : 'cap';
-      // Mendarat di zona merah redline (162 - 180 KM/H, sudut +72° s/d +90°)
       const targetSpeed = 164 + Math.random() * 14; // 164 - 178 KM/H
-      const targetAngle = ((targetSpeed / 180) * 180) - 90; // +74° s/d +88°
+      const targetAngle = ((targetSpeed / 180) * 180) - 90;
 
       return {
         tier: 1,
@@ -453,21 +499,18 @@ class KratingdaengGame {
     }
 
     // 2. TIER 2 — 30%: Payung Lipat, Jas Hujan, Tongkat Tol (RA) / Cover Tas (Pelabuhan) (2:3:4)
-    if (rand < 40) { // 10% + 30% = 40%
-      const subWeight = Math.random() * 9; // Total bobot = 2 + 3 + 4 = 9
+    if (rand < 40) {
+      const subWeight = Math.random() * 9;
       let prizeItem = '';
       let prizeType = '';
 
       if (subWeight < 2) {
-        // Bobot 2: Payung Lipat
         prizeItem = 'Payung Lipat Kratingdaeng';
         prizeType = 'umbrella';
       } else if (subWeight < 5) {
-        // Bobot 3: Jas Hujan
         prizeItem = 'Jas Hujan Kratingdaeng';
         prizeType = 'raincoat';
       } else {
-        // Bobot 4: Tongkat Tol khusus RA / Cover Tas khusus pelabuhan
         if (this.location === 'RA') {
           prizeItem = 'Tongkat Tol Kratingdaeng (Khusus RA)';
           prizeType = 'tolstick';
@@ -477,9 +520,8 @@ class KratingdaengGame {
         }
       }
 
-      // Mendarat di zona biru (108 - 162 KM/H, sudut +18° s/d +72°)
       const targetSpeed = 112 + Math.random() * 46; // 112 - 158 KM/H
-      const targetAngle = ((targetSpeed / 180) * 180) - 90; // +22° s/d +68°
+      const targetAngle = ((targetSpeed / 180) * 180) - 90;
 
       return {
         tier: 2,
@@ -493,10 +535,9 @@ class KratingdaengGame {
       };
     }
 
-    // 3. TIER 3 — 60%: Shopping Bag saja (100% dari Tier 3)
-    // Mendarat di zona hijau (0 - 108 KM/H, sudut -90° s/d +18°)
+    // 3. TIER 3 — 60%: Shopping Bag saja
     const targetSpeed = 20 + Math.random() * 82; // 20 - 102 KM/H
-    const targetAngle = ((targetSpeed / 180) * 180) - 90; // -70° s/d +12°
+    const targetAngle = ((targetSpeed / 180) * 180) - 90;
 
     return {
       tier: 3,
@@ -511,7 +552,7 @@ class KratingdaengGame {
   }
 
   // =========================================================================
-  // SPIN LOOP ANIMASI (60 FPS)
+  // SPIN LOOP ANIMASI
   // =========================================================================
   spinLoop(currentTime) {
     if (this.state !== 'SPINNING' && this.state !== 'DECELERATING') return;
@@ -519,40 +560,39 @@ class KratingdaengGame {
     const elapsed = currentTime - this.spinStartTime;
 
     // -----------------------------------------------------------------------
-    // FASE 1: PUTARAN CEPAT BERKECEPATAN TINGGI (0.0s s/d 1.5s)
+    // FASE 1: PUTARAN CEPAT BERKECEPATAN TINGGI
     // -----------------------------------------------------------------------
     if (elapsed < this.spinFastDuration) {
       const t = elapsed / 1000;
-      // Ayunan frekuensi tinggi melintasi seluruh busur 180° (-90° s/d +90°)
       const swing = Math.sin(t * 14) * 62 + Math.sin(t * 28) * 26 + (Math.random() - 0.5) * 14;
-      const blend = Math.min(1, elapsed / 400); // transisi mulus dari jarum penuh (+90) ke ayunan
+      const blend = Math.min(1, elapsed / 400);
       this.currentAngle = Math.max(-90, Math.min(90, 90 + (swing - 90) * blend));
-      if (elapsed - this.cycLast > 85) { this.cycLast = elapsed; this.cycIdx = (this.cycIdx + 1) % window.gauge.N; window.gauge.highlight(this.cycIdx); }
-      this.currentSpeed = Math.round(((this.currentAngle + 90) / 180) * 180);
 
+      if (elapsed - this.cycLast > 85) {
+        this.cycLast = elapsed;
+        this.cycIdx = (this.cycIdx + 1) % window.gauge.N;
+        window.gauge.highlight(this.cycIdx);
+      }
+
+      this.currentSpeed = Math.round(((this.currentAngle + 90) / 180) * 180);
       if (this.currentSpeed > this.peakSpeed) {
         this.peakSpeed = this.currentSpeed;
       }
 
-      // Odometer Digital bertambah cepat (simulasi rotasi ban kencang)
+      // Odometer Digital bertambah
       if (Math.random() > 0.35) {
         this.odometerMileage += Math.floor(Math.random() * 3) + 1;
       }
 
-      // Suara deru mesin naik seiring intensitas kecepatan
-      window.soundSystem.updateEngineRev(this.currentSpeed / 180, this.currentSpeed);
-
-      // Partikel percikan dari ujung jarum
       if (Math.random() > 0.4) {
         this.emitNeedleSparks();
       }
 
-      // Update Tampilan Speedometer & Odometer
       this.updateSpeedometerVisual(this.currentAngle, this.currentSpeed);
     }
 
     // -----------------------------------------------------------------------
-    // TRANSISI KE FASE 2: PERLAMBATAN (DECELERATION) PADA DETIK KE-1.5
+    // TRANSISI KE FASE 2: PERLAMBATAN (DECELERATION)
     // -----------------------------------------------------------------------
     else if (!this.hasSwitchedToDecel) {
       this.hasSwitchedToDecel = true;
@@ -567,17 +607,15 @@ class KratingdaengGame {
       if (this.dom.btnSpinText) this.dom.btnSpinText.textContent = 'MENGUNCI TARGET...';
       if (this.dom.btnSpinSubtext) this.dom.btnSpinSubtext.textContent = 'JARUM SEDANG MENDARAT DI SEKTOR HADIAH';
       if (this.dom.needleGroup) this.dom.needleGroup.classList.add('decelerating');
-      // Audio deselerasi sudah diatur oleh spinSequence (fase off_midhigh & off_lower)
     }
 
     // -----------------------------------------------------------------------
-    // FASE 2: PERLAMBATAN DRAMATIS MENUJU TARGET (1.5s s/d 4.1s)
+    // FASE 2: PERLAMBATAN MENUJU TARGET
     // -----------------------------------------------------------------------
     if (elapsed >= this.spinFastDuration && elapsed < this.spinTotalDuration) {
       const decelElapsed = elapsed - this.spinFastDuration;
       const progress = Math.min(1.0, decelElapsed / this.spinDecelDuration);
 
-      // Easing Cubic Out yang sangat halus dengan efek inersia pegas (spring settling)
       const ease = 1 - Math.pow(1 - progress, 3);
       const remainingProgress = 1 - progress;
       const wobble = Math.sin(progress * Math.PI * 4) * (remainingProgress * 12);
@@ -586,7 +624,6 @@ class KratingdaengGame {
       this.currentSpeed = Math.round(((this.currentAngle + 90) / 180) * 180);
       this.stepDecelSectors(decelElapsed);
 
-      // Bunyi Tik Pin / Peg saat melintasi batas speed
       if (Math.abs(this.currentSpeed - this.lastTickSpeed) >= 14) {
         window.soundSystem.playNeedleTick(0.8 + (this.currentSpeed / 180) * 0.6);
         this.lastTickSpeed = this.currentSpeed;
@@ -596,7 +633,7 @@ class KratingdaengGame {
     }
 
     // -----------------------------------------------------------------------
-    // FASE 3: MENDARAT DI TARGET & FINISH ROUND (>= 4.1s)
+    // FASE 3: MENDARAT DI TARGET & FINISH ROUND
     // -----------------------------------------------------------------------
     if (elapsed >= this.spinTotalDuration) {
       this.currentAngle = this.targetAngle;
@@ -610,21 +647,19 @@ class KratingdaengGame {
     this.loopRaf = requestAnimationFrame((t) => this.spinLoop(t));
   }
 
-  // =========================================================================
-  // UPDATE VISUAL SPEEDOMETER & ODOMETER (180 DERAJAT)
-  // =========================================================================
   updateSpeedometerVisual(angle, speed) {
-    // sudut -90..+90 => RPM 0..10 pada speedometer baru
     window.gauge.setValue((Math.max(-90, Math.min(90, angle)) + 90) / 18);
   }
 
-  // Rencana tik sektor saat melambat: tik terakhir PASTI mendarat di sektor hadiah
   planDecelSectors() {
     const N = window.gauge.N;
     this.cycWin = window.gauge.indexForPrize(this.activePrize.prizeType);
     const n = 16 + ((((this.cycWin - this.cycIdx - 16) % N) + N) % N);
     const raw = []; let s = 0;
-    for (let k = 0; k < n; k++) { s += 60 + Math.pow(k / n, 2.2) * 420; raw.push(s); }
+    for (let k = 0; k < n; k++) {
+      s += 60 + Math.pow(k / n, 2.2) * 420;
+      raw.push(s);
+    }
     const f = (this.spinDecelDuration * 0.92) / s;
     this.cycPlan = raw.map(x => x * f);
     this.cycStep = 0;
@@ -663,12 +698,11 @@ class KratingdaengGame {
   async finishRound() {
     this.state = 'GAMEOVER';
     if (this.loopRaf) cancelAnimationFrame(this.loopRaf);
-    window.soundSystem.stopBGM();
-    window.soundSystem.stopSpinSequence(); // pastikan audio spin dihentikan jika finish lebih awal
+    window.soundSystem.stopSpinSequence();
 
     const prize = this.activePrize;
 
-    // Bunyikan Fanfare Kemenangan Sesuai Tier
+    // Bunyikan Fanfare Kemenangan
     window.soundSystem.playPrizeWin(prize.tier);
 
     // Ledakan Confetti & Partikel
@@ -681,11 +715,18 @@ class KratingdaengGame {
     this.dom.resTierBadge.className = `tier-badge ${prize.badgeClass}`;
     this.dom.resTierDesc.textContent = prize.desc;
     this.dom.resFinalSpeed.textContent = `${prize.targetSpeed} KM/H`;
-    this.dom.resHoldTime.textContent = `${(this.spinTotalDuration / 1000).toFixed(1)}s (1 Klik)`;
+    this.dom.resHoldTime.textContent = '1 Klik (13.7s)';
     this.dom.resBoothLoc.textContent = this.location === 'RA' ? 'Rest Area (RA)' : 'Pelabuhan';
 
-    // Artwork SVG Hadiah
-    this.dom.resPrizeIconBox.innerHTML = this.getPrizeArtworkSvg(prize.prizeType);
+    // Tampilkan Icon Hadiah: Cek apakah ada Custom Image dari Drive
+    const directImgUrl = window.prizeManager ? window.prizeManager.getDirectImageUrl(prize.prizeType) : '';
+    if (directImgUrl) {
+      this.dom.resPrizeIconBox.innerHTML = `
+        <img src="${directImgUrl}" class="prize-hero-img" alt="${prize.prizeName}" onerror="this.outerHTML=window.game.getPrizeArtworkSvg('${prize.prizeType}')">
+      `;
+    } else {
+      this.dom.resPrizeIconBox.innerHTML = this.getPrizeArtworkSvg(prize.prizeType);
+    }
 
     // Beralih Layar ke Hasil
     setTimeout(() => {
@@ -697,13 +738,9 @@ class KratingdaengGame {
     await this.syncScoreToBackend(prize);
   }
 
-  // =========================================================================
-  // VECTOR ARTWORK SVG UNTUK SETIAP HADIAH
-  // =========================================================================
   getPrizeArtworkSvg(type) {
     switch (type) {
       case 'tshirt':
-        // Kaos Eksklusif Kratingdaeng
         return `
           <svg class="prize-artwork-svg" viewBox="0 0 64 64" fill="none">
             <path d="M18 12 L26 18 Q32 22 38 18 L46 12 L56 22 L49 28 L46 25 L46 54 L18 54 L18 25 L15 28 L8 22 Z" fill="#ffd700" stroke="#b45309" stroke-width="2" stroke-linejoin="round"/>
@@ -713,7 +750,6 @@ class KratingdaengGame {
           </svg>`;
 
       case 'cap':
-        // Topi Kratingdaeng
         return `
           <svg class="prize-artwork-svg" viewBox="0 0 64 64" fill="none">
             <ellipse cx="28" cy="36" rx="20" ry="14" fill="#e60000" stroke="#ffd700" stroke-width="2"/>
@@ -723,7 +759,6 @@ class KratingdaengGame {
           </svg>`;
 
       case 'umbrella':
-        // Payung Lipat
         return `
           <svg class="prize-artwork-svg" viewBox="0 0 64 64" fill="none">
             <path d="M32 12 Q12 28 14 36 L50 36 Q52 28 32 12 Z" fill="#0284c7" stroke="#38bdf8" stroke-width="2"/>
@@ -733,7 +768,6 @@ class KratingdaengGame {
           </svg>`;
 
       case 'raincoat':
-        // Jas Hujan
         return `
           <svg class="prize-artwork-svg" viewBox="0 0 64 64" fill="none">
             <path d="M26 12 Q32 6 38 12 L44 18 L54 26 L48 32 L44 28 L44 56 L20 56 L20 28 L16 32 L10 26 L20 18 Z" fill="#0284c7" stroke="#38bdf8" stroke-width="2"/>
@@ -742,7 +776,6 @@ class KratingdaengGame {
           </svg>`;
 
       case 'tolstick':
-        // Tongkat Tol (Khusus RA)
         return `
           <svg class="prize-artwork-svg" viewBox="0 0 64 64" fill="none">
             <rect x="22" y="10" width="20" height="14" rx="2" fill="#ffd700" stroke="#b45309" stroke-width="1.5"/>
@@ -752,7 +785,6 @@ class KratingdaengGame {
           </svg>`;
 
       case 'bagcover':
-        // Cover Tas (Khusus Pelabuhan)
         return `
           <svg class="prize-artwork-svg" viewBox="0 0 64 64" fill="none">
             <ellipse cx="32" cy="34" rx="18" ry="22" fill="#0284c7" stroke="#38bdf8" stroke-width="2"/>
@@ -763,7 +795,6 @@ class KratingdaengGame {
 
       case 'shoppingbag':
       default:
-        // Shopping Bag
         return `
           <svg class="prize-artwork-svg" viewBox="0 0 64 64" fill="none">
             <rect x="16" y="24" width="32" height="34" rx="3" fill="#059669" stroke="#34d399" stroke-width="2"/>
@@ -784,6 +815,8 @@ class KratingdaengGame {
     this.dom.sheetSyncStatus.className = 'status-pill pending';
     this.dom.certLinkContainer.classList.add('hidden');
 
+    const deviceType = window.innerWidth >= 1024 ? 'Desktop' : window.innerWidth >= 768 ? 'Tablet' : 'Mobile';
+
     const payload = {
       name: this.playerName,
       score: prize.targetSpeed,
@@ -791,7 +824,7 @@ class KratingdaengGame {
       peakRpm: prize.targetSpeed,
       duration: parseFloat((this.spinTotalDuration / 1000).toFixed(1)),
       maxPercent: `${prize.targetSpeed} KM/H`,
-      device: `${window.innerWidth < 768 ? 'Mobile' : 'Desktop'} (${this.location === 'RA' ? 'Booth RA' : 'Booth Pelabuhan'})`
+      device: `${deviceType} (${this.location === 'RA' ? 'Booth RA' : 'Booth Pelabuhan'})`
     };
 
     try {
@@ -850,7 +883,7 @@ class KratingdaengGame {
 
   shareScore() {
     if (!this.activePrize) return;
-    const text = `Saya baru saja memutar Speedometer Lucky Dip Kratingdaeng dan memenangkan ${this.activePrize.prizeName} (${this.activePrize.tierName}) dengan kecepatan ${this.activePrize.targetSpeed} KM/H! Gas pol sekarang!`;
+    const text = `Saya baru saja memutar Speedometer Lucky Dip Kratingdaeng dan memenangkan ${this.activePrize.prizeName} (${this.activePrize.tierName}) dengan kecepatan ${this.activePrize.targetSpeed} KM/H! Putar sekarang!`;
 
     if (navigator.share) {
       navigator.share({

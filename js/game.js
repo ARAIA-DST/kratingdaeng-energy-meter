@@ -20,7 +20,7 @@ class KratingdaengGame {
     // State Game
     this.state = 'INIT'; // INIT, COUNTDOWN, PLAYING, SPINNING, DECELERATING, GAMEOVER
     this.playerName = 'Jagoan Kratingdaeng';
-    this.location = 'RA'; // 'RA' atau 'Pelabuhan'
+    this.location = 'RA'; // Default; akan diambil dari backend saat init
 
     // Speedometer 180° State
     // Sudut jarum: -90° (0 KM/H, sisi kiri) s/d +90° (180 KM/H, sisi kanan)
@@ -30,12 +30,13 @@ class KratingdaengGame {
     this.odometerMileage = 18420; // Kilometrage dasar
     this.lastTickSpeed = 0;
 
-    // Single-Click Spin Timing
+    // Single-Click Spin Timing (Total 15 detik sesuai urutan audio)
+    // Timeline audio: off_lower(0-1.5s) → on_low(1.5-4.5s) → on_midhigh(4.5-8s) → on_high(8-11.5s) → off_midhigh(11.5-13.5s) → off_lower(13.5-15s)
     this.isSpinning = false;
     this.spinStartTime = 0;
-    this.spinFastDuration = 1500;  // 1.5 detik putaran akselerasi kecepatan tinggi
-    this.spinDecelDuration = 2600; // 2.6 detik perlambatan dramatis & peg ticking
-    this.spinTotalDuration = this.spinFastDuration + this.spinDecelDuration; // ~4.1s total
+    this.spinFastDuration = 9500;   // 0s-9.5s: fase putaran cepat (mesin naik on_low→on_midhigh→on_high)
+    this.spinDecelDuration = 5500;  // 9.5s-15s: fase deselerasi (on_high turun→off_midhigh→off_lower)
+    this.spinTotalDuration = this.spinFastDuration + this.spinDecelDuration; // = 15.0 detik
     this.decelStartAngle = 0;
     this.hasSwitchedToDecel = false;
 
@@ -50,6 +51,9 @@ class KratingdaengGame {
 
     // Inisialisasi DOM Elements Cache
     this.initDOMElements();
+
+    // Ambil lokasi booth & konfigurasi dari backend
+    this.loadBoothConfigFromBackend();
 
     // Inisialisasi Sistem Partikel FX
     this.particles = new ParticleSystem(this.dom.canvas);
@@ -69,7 +73,7 @@ class KratingdaengGame {
       countdownOverlay: document.getElementById('countdown-overlay'),
       countdownText: document.getElementById('countdown-text'),
 
-      // Inputs & Global Buttons
+      // Global Buttons
       nameInput: document.getElementById('player-name-input'),
       startBtn: document.getElementById('btn-start-game'),
       restartBtn: document.getElementById('btn-play-again'),
@@ -78,10 +82,6 @@ class KratingdaengGame {
       settingsBtn: document.getElementById('btn-open-settings'),
       settingsModal: document.getElementById('settings-modal'),
       closeSettingsBtn: document.getElementById('btn-close-settings'),
-      saveSettingsBtn: document.getElementById('btn-save-settings'),
-      testApiBtn: document.getElementById('btn-test-api'),
-      scriptUrlInput: document.getElementById('appscript-url-input'),
-      apiStatusMsg: document.getElementById('api-status-msg'),
 
       // HUD Stats
       hudPlayerDisplay: document.getElementById('hud-player-display'),
@@ -146,23 +146,8 @@ class KratingdaengGame {
       if (e.key === 'Enter') this.initAudioAndStart();
     });
 
-    // Pemilihan Lokasi Booth (Rest Area vs Pelabuhan)
-    document.querySelectorAll('.location-pill').forEach(pill => {
-      pill.addEventListener('click', () => {
-        document.querySelectorAll('.location-pill').forEach(p => p.classList.remove('selected'));
-        pill.classList.add('selected');
-        this.location = pill.dataset.location || 'RA';
-        
-        // Update label dynamic item pada kartu Tier 2 di start screen
-        if (this.dom.tier2DynamicItem) {
-          if (this.location === 'RA') {
-            this.dom.tier2DynamicItem.textContent = 'Tongkat Tol (Khusus RA)';
-          } else {
-            this.dom.tier2DynamicItem.textContent = 'Cover Tas (Khusus Pelabuhan)';
-          }
-        }
-      });
-    });
+    // Lokasi Booth: Diatur oleh backend (Google Apps Script) via loadBoothConfigFromBackend()
+    // Selector hanya tampilan informasi, tidak bisa diklik manual oleh pemain
 
     // Tombol Main Lagi
     this.dom.restartBtn.addEventListener('click', () => this.showStartScreen());
@@ -189,45 +174,17 @@ class KratingdaengGame {
       }
     });
 
-    // Settings Modal
-    this.dom.settingsBtn.addEventListener('click', () => {
-      this.dom.settingsModal.classList.remove('hidden');
-    });
-
-    this.dom.closeSettingsBtn.addEventListener('click', () => {
-      this.dom.settingsModal.classList.add('hidden');
-    });
-
-    this.dom.saveSettingsBtn.addEventListener('click', () => {
-      const url = this.dom.scriptUrlInput.value.trim();
-      window.apiService.setScriptUrl(url);
-      this.dom.apiStatusMsg.textContent = 'URL Google Apps Script berhasil disimpan!';
-      this.dom.apiStatusMsg.className = 'status-msg success';
-      setTimeout(() => {
-        this.dom.settingsModal.classList.add('hidden');
-        this.dom.apiStatusMsg.textContent = '';
-      }, 1200);
-    });
-
-    this.dom.testApiBtn.addEventListener('click', async () => {
-      const url = this.dom.scriptUrlInput.value.trim();
-      if (!url) {
-        this.dom.apiStatusMsg.textContent = 'Harap masukkan URL Google Apps Script!';
-        this.dom.apiStatusMsg.className = 'status-msg error';
-        return;
-      }
-      this.dom.apiStatusMsg.textContent = 'Menguji koneksi ke Google Apps Script...';
-      this.dom.apiStatusMsg.className = 'status-msg info';
-
-      const res = await window.apiService.testConnection(url);
-      if (res.ok) {
-        this.dom.apiStatusMsg.textContent = 'Koneksi Berhasil! Terhubung ke Google Sheet & Drive.';
-        this.dom.apiStatusMsg.className = 'status-msg success';
-      } else {
-        this.dom.apiStatusMsg.textContent = `Koneksi Gagal: ${res.error}`;
-        this.dom.apiStatusMsg.className = 'status-msg error';
-      }
-    });
+    // Settings Modal (hanya menampilkan info koneksi backend untuk referensi admin)
+    if (this.dom.settingsBtn) {
+      this.dom.settingsBtn.addEventListener('click', () => {
+        if (this.dom.settingsModal) this.dom.settingsModal.classList.remove('hidden');
+      });
+    }
+    if (this.dom.closeSettingsBtn) {
+      this.dom.closeSettingsBtn.addEventListener('click', () => {
+        if (this.dom.settingsModal) this.dom.settingsModal.classList.add('hidden');
+      });
+    }
 
     if (this.dom.refreshLbBtn) {
       this.dom.refreshLbBtn.addEventListener('click', () => this.updateLeaderboardDisplay());
@@ -265,6 +222,48 @@ class KratingdaengGame {
     const name = this.dom.nameInput.value.trim();
     this.playerName = name ? name : 'Jagoan Kratingdaeng';
     this.startCountdown();
+  }
+
+  // =========================================================================
+  // AMBIL KONFIGURASI LOKASI BOOTH DARI BACKEND (Google Apps Script)
+  // =========================================================================
+  async loadBoothConfigFromBackend() {
+    try {
+      const config = await window.apiService.getBoothConfig();
+      if (config && config.location) {
+        this.location = config.location; // 'RA' atau 'Pelabuhan'
+      }
+      // Update tampilan badge di HUD jika game-screen sudah visible
+      if (this.dom.hudLocationBadge) {
+        this.dom.hudLocationBadge.textContent = this.location === 'RA' ? 'Rest Area (RA)' : 'Pelabuhan';
+      }
+      // Update label chip Tier 2 di start screen
+      if (this.dom.tier2DynamicItem) {
+        this.dom.tier2DynamicItem.textContent = this.location === 'RA'
+          ? 'Tongkat Tol (Khusus RA)'
+          : 'Cover Tas (Khusus Pelabuhan)';
+      }
+      // Update label di location-pill selector (hanya tampilkan yang aktif)
+      this.updateLocationDisplay();
+    } catch (e) {
+      console.warn('Gagal memuat konfigurasi booth dari backend, menggunakan default RA:', e);
+    }
+  }
+
+  updateLocationDisplay() {
+    // Sembunyikan selector manual, tampilkan sebagai informasi saja
+    document.querySelectorAll('.location-pill').forEach(pill => {
+      pill.classList.remove('selected');
+      if (pill.dataset.location === this.location) {
+        pill.classList.add('selected');
+      }
+    });
+    // Update label tier2 dynamic item
+    if (this.dom.tier2DynamicItem) {
+      this.dom.tier2DynamicItem.textContent = this.location === 'RA'
+        ? 'Tongkat Tol (Khusus RA)'
+        : 'Cover Tas (Khusus Pelabuhan)';
+    }
   }
 
   showStartScreen() {
@@ -358,16 +357,16 @@ class KratingdaengGame {
     this.targetAngle = this.activePrize.targetAngle;
     this.targetSpeed = this.activePrize.targetSpeed;
 
-    // Parameter Timing Putaran Roda
+    // Parameter Timing Putaran Roda (15 detik, sesuai urutan audio)
     this.spinStartTime = performance.now();
-    this.spinFastDuration = 1500;  // 1.5 detik putaran akselerasi kencang
-    this.spinDecelDuration = 2600; // 2.6 detik deselerasi hingga mengunci hadiah
-    this.spinTotalDuration = this.spinFastDuration + this.spinDecelDuration;
+    this.spinFastDuration = 9500;   // 0s-9.5s: putaran cepat (audio on_low→on_midhigh→on_high)
+    this.spinDecelDuration = 5500;  // 9.5s-15s: deselerasi (audio off_midhigh→off_lower)
+    this.spinTotalDuration = this.spinFastDuration + this.spinDecelDuration; // 15 detik total
     this.decelStartAngle = 90;
     this.hasSwitchedToDecel = false;
 
-    // Mulai deru suara mesin ON (on_low -> on_midhigh -> on_high)
-    window.soundSystem.startEngineRev();
+    // Mulai sequence suara mesin 15 detik (off_lower→on_low→on_midhigh→on_high→off_midhigh→off_lower)
+    window.soundSystem.startSpinSequence();
 
     // Jalankan Loop Animasi Fisika RAF
     this.lastLoopTime = performance.now();
@@ -507,15 +506,13 @@ class KratingdaengGame {
       this.state = 'DECELERATING';
       this.decelStartAngle = this.currentAngle;
 
-      // Pindahkan suara mesin dari gas ON ke deselerasi OFF (off_midhigh -> off_lower)
-      window.soundSystem.stopEngineRev(this.currentSpeed);
-
       this.dom.hudGasStatus.textContent = 'MENGUNCI...';
       this.dom.hudGasStatus.style.color = '#ffd700';
       this.dom.overchargeBanner.textContent = 'JARUM MELAMBAT... MENUJU SEKTOR HADIAH LUCKY DIP!';
       if (this.dom.btnSpinText) this.dom.btnSpinText.textContent = 'MENGUNCI TARGET...';
       if (this.dom.btnSpinSubtext) this.dom.btnSpinSubtext.textContent = 'JARUM SEDANG MENDARAT DI SEKTOR HADIAH';
       if (this.dom.needleGroup) this.dom.needleGroup.classList.add('decelerating');
+      // Audio deselerasi sudah diatur oleh spinSequence (fase off_midhigh & off_lower)
     }
 
     // -----------------------------------------------------------------------
@@ -630,7 +627,7 @@ class KratingdaengGame {
     this.state = 'GAMEOVER';
     if (this.loopRaf) cancelAnimationFrame(this.loopRaf);
     window.soundSystem.stopBGM();
-    window.soundSystem.stopEngineRev();
+    window.soundSystem.stopSpinSequence(); // pastikan audio spin dihentikan jika finish lebih awal
 
     const prize = this.activePrize;
 

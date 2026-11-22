@@ -303,137 +303,173 @@ class SoundSystem {
   }
 
   /**
-   * Sound FX: Suara Mesin Menderu (Engine Rev) saat Tekan & Tahan Gas
-   * Menggunakan 3 Layer Sample Audio Nyata: on_low, on_midhigh, on_high
+   * ===================================================================================
+   * SPIN WHEEL SOUND SEQUENCE (15 DETIK TOTAL)
+   * Urutan: off_lower → on_low → on_midhigh → on_high → off_midhigh → off_lower
+   *
+   * Timeline (15 detik):
+   *   0.0s  - 1.5s  : off_lower  (intro idle, mesin dingin menyala)
+   *   1.5s  - 4.5s  : on_low     (crossfade masuk, putaran rendah)
+   *   4.5s  - 8.0s  : on_midhigh (akselerasi sedang)
+   *   8.0s  - 11.5s : on_high    (peak redline / putaran puncak)
+   *   11.5s - 13.5s : off_midhigh (lepas gas, perlambatan)
+   *   13.5s - 15.0s : off_lower  (jarum berhenti, idle kembali)
+   * ===================================================================================
    */
-  startEngineRev() {
+  startSpinSequence() {
     if (this.isMuted) return;
     this.ensureContext();
-    this.isRevving = true;
 
-    // Hentikan suara deselerasi (off sounds) jika sedang berputar
-    if (this.offTimer) {
-      clearTimeout(this.offTimer);
-      this.offTimer = null;
+    // Batalkan sequence sebelumnya jika ada
+    this.stopSpinSequence();
+
+    this.isRevving = true;
+    this._spinTimers = [];
+
+    const s = this.samples;
+
+    // Hentikan semua dulu & reset
+    Object.values(s).forEach(snd => {
+      try { snd.pause(); snd.currentTime = 0; snd.volume = 0; } catch (e) {}
+    });
+
+    // Helper crossfade volume secara gradual
+    const fadeVolume = (track, fromVol, toVol, durationMs, stepMs = 50) => {
+      if (!track) return;
+      const steps = Math.max(1, Math.round(durationMs / stepMs));
+      const delta = (toVol - fromVol) / steps;
+      let step = 0;
+      const timer = setInterval(() => {
+        step++;
+        const newVol = Math.max(0, Math.min(1, fromVol + delta * step));
+        try { track.volume = newVol; } catch (e) {}
+        if (step >= steps) clearInterval(timer);
+      }, stepMs);
+      this._spinTimers.push(timer);
+    };
+
+    // --- FASE 0: off_lower (0.0s - 1.5s) mesin idle menyala ---
+    try {
+      s.offLower.currentTime = 0;
+      s.offLower.volume = 0.75;
+      s.offLower.loop = true;
+      this.playTrackSafe(s.offLower);
+    } catch (e) {}
+
+    // --- FASE 1: on_low masuk (1.5s), off_lower fade out ---
+    const t1 = setTimeout(() => {
+      try {
+        s.onLow.currentTime = 0;
+        s.onLow.volume = 0;
+        s.onLow.loop = true;
+        this.playTrackSafe(s.onLow);
+        fadeVolume(s.onLow, 0, 0.9, 1200);     // fade in on_low
+        fadeVolume(s.offLower, 0.75, 0, 1200); // fade out off_lower
+      } catch (e) {}
+    }, 1500);
+    this._spinTimers.push(t1);
+
+    // --- FASE 2: on_midhigh masuk (4.5s), on_low fade out ---
+    const t2 = setTimeout(() => {
+      try {
+        s.onMidHigh.currentTime = 0;
+        s.onMidHigh.volume = 0;
+        s.onMidHigh.loop = true;
+        this.playTrackSafe(s.onMidHigh);
+        fadeVolume(s.onMidHigh, 0, 0.9, 1800);  // fade in on_midhigh
+        fadeVolume(s.onLow, 0.9, 0, 1800);      // fade out on_low
+      } catch (e) {}
+    }, 4500);
+    this._spinTimers.push(t2);
+
+    // --- FASE 3: on_high masuk (8.0s), on_midhigh fade out ---
+    const t3 = setTimeout(() => {
+      try {
+        s.onHigh.currentTime = 0;
+        s.onHigh.volume = 0;
+        s.onHigh.loop = true;
+        this.playTrackSafe(s.onHigh);
+        fadeVolume(s.onHigh, 0, 1.0, 2000);     // fade in on_high full blast
+        fadeVolume(s.onMidHigh, 0.9, 0, 2000);  // fade out on_midhigh
+      } catch (e) {}
+    }, 8000);
+    this._spinTimers.push(t3);
+
+    // --- FASE 4: off_midhigh masuk (11.5s), on_high fade out ---
+    const t4 = setTimeout(() => {
+      try {
+        s.offMidHigh.currentTime = 0;
+        s.offMidHigh.volume = 0;
+        s.offMidHigh.loop = false;
+        this.playTrackSafe(s.offMidHigh);
+        fadeVolume(s.offMidHigh, 0, 0.9, 1200);
+        fadeVolume(s.onHigh, 1.0, 0, 1200);
+      } catch (e) {}
+    }, 11500);
+    this._spinTimers.push(t4);
+
+    // --- FASE 5: off_lower masuk (13.5s), off_midhigh fade out ---
+    const t5 = setTimeout(() => {
+      try {
+        s.offLower.loop = false;
+        s.offLower.currentTime = 0;
+        s.offLower.volume = 0;
+        this.playTrackSafe(s.offLower);
+        fadeVolume(s.offLower, 0, 0.8, 1200);
+        fadeVolume(s.offMidHigh, 0.9, 0, 1200);
+      } catch (e) {}
+    }, 13500);
+    this._spinTimers.push(t5);
+
+    // --- BERSIH di 15.5s ---
+    const t6 = setTimeout(() => {
+      this.isRevving = false;
+      Object.values(this.samples).forEach(snd => {
+        try { snd.pause(); snd.volume = 0; } catch (e) {}
+      });
+    }, 15500);
+    this._spinTimers.push(t6);
+  }
+
+  /**
+   * Hentikan sequence spin dan redam semua track
+   */
+  stopSpinSequence() {
+    this.isRevving = false;
+    if (this._spinTimers && this._spinTimers.length) {
+      this._spinTimers.forEach(t => {
+        if (typeof t === 'number') clearTimeout(t);
+        else clearInterval(t);
+      });
+      this._spinTimers = [];
     }
     if (this.samples) {
-      this.pauseTrackSafe(this.samples.offMidHigh);
-      this.pauseTrackSafe(this.samples.offLower);
-
-      // Mulai putar 3 layer on audio
-      try {
-        this.samples.onLow.currentTime = 0;
-        this.samples.onMidHigh.currentTime = 0;
-        this.samples.onHigh.currentTime = 0;
-        
-        this.samples.onLow.volume = 0.85;
-        this.samples.onMidHigh.volume = 0.05;
-        this.samples.onHigh.volume = 0.0;
-
-        this.playTrackSafe(this.samples.onLow);
-        this.playTrackSafe(this.samples.onMidHigh);
-        this.playTrackSafe(this.samples.onHigh);
-      } catch (e) {
-        console.warn('Gagal memutar sample engine on:', e);
-      }
+      Object.values(this.samples).forEach(snd => {
+        try { snd.pause(); snd.volume = 0; } catch (e) {}
+      });
     }
   }
 
   /**
-   * Update Crossfade & Pitch Sample Mesin berdasarkan Kecepatan KM/H (0 - 180 KM/H)
+   * Alias untuk kompatibilitas: startEngineRev → startSpinSequence
+   */
+  startEngineRev() {
+    this.startSpinSequence();
+  }
+
+  /**
+   * Update Crossfade tidak digunakan di mode 15s, tetap ada untuk kompatibilitas
    */
   updateEngineRev(intensity = 0.5, speed = 0) {
-    if (!this.isRevving) return;
-
-    if (this.samples && !this.isMuted) {
-      const spd = typeof speed === 'number' && speed > 0 ? speed : intensity * 180;
-
-      // 1. Crossfade dinamis 3 layer sample:
-      // on_low: dominan di 0 - 65 km/h
-      // on_midhigh: dominan di 65 - 135 km/h
-      // on_high: dominan di 135 - 180 km/h (redline)
-      let volLow = 0;
-      let volMid = 0;
-      let volHigh = 0;
-
-      if (spd <= 65) {
-        const ratio = spd / 65;
-        volLow = 0.9 - (ratio * 0.35); // 0.9 -> 0.55
-        volMid = ratio * 0.7;          // 0.0 -> 0.7
-        volHigh = 0;
-      } else if (spd <= 135) {
-        const ratio = (spd - 65) / 70;
-        volLow = Math.max(0, 0.55 - (ratio * 0.55)); // 0.55 -> 0.0
-        volMid = 0.9 - (ratio * 0.2);               // 0.9 -> 0.7
-        volHigh = ratio * 0.85;                     // 0.0 -> 0.85
-      } else {
-        const ratio = (spd - 135) / 45;
-        volLow = 0;
-        volMid = Math.max(0.1, 0.7 - (ratio * 0.6)); // 0.7 -> 0.1
-        volHigh = 0.85 + (ratio * 0.15);            // 0.85 -> 1.0 (scream!)
-      }
-
-      this.samples.onLow.volume = Math.max(0, Math.min(1, volLow));
-      this.samples.onMidHigh.volume = Math.max(0, Math.min(1, volMid));
-      this.samples.onHigh.volume = Math.max(0, Math.min(1, volHigh));
-
-      // 2. Halus pitch rate bending (0.92x s/d 1.18x) untuk akselerasi organik
-      const rate = 0.92 + (spd / 180) * 0.26;
-      try {
-        this.samples.onLow.playbackRate = rate;
-        this.samples.onMidHigh.playbackRate = rate;
-        this.samples.onHigh.playbackRate = rate;
-      } catch (e) {}
-    }
+    // Spin sequence mengatur crossfade sendiri via timeline, tidak perlu di-update per-frame
   }
 
   /**
-   * Hentikan Putaran Gas (Throttle Off / Deceleration)
-   * Memainkan sample nyata: off_midhigh.wav lalu off_lower.wav
+   * Stop engine rev → stop spin sequence
    */
   stopEngineRev(speedAtRelease = 100) {
-    if (!this.isRevving) return;
-    this.isRevving = false;
-
-    // Segera redam & hentikan semua layer ON
-    if (this.samples) {
-      this.pauseTrackSafe(this.samples.onLow);
-      this.pauseTrackSafe(this.samples.onMidHigh);
-      this.pauseTrackSafe(this.samples.onHigh);
-
-      if (!this.isMuted) {
-        const spd = typeof speedAtRelease === 'number' ? speedAtRelease : 100;
-
-        if (spd >= 80) {
-          // Lepas gas di kecepatan tinggi/sedang: Mainkan off_midhigh dulu
-          try {
-            this.samples.offMidHigh.currentTime = 0;
-            this.samples.offMidHigh.volume = 0.9;
-            this.playTrackSafe(this.samples.offMidHigh);
-
-            // Transisi ke off_lower saat jarum melambat (~1.2 detik kemudian)
-            this.offTimer = setTimeout(() => {
-              try {
-                this.samples.offLower.currentTime = 0;
-                this.samples.offLower.volume = 0.85;
-                this.playTrackSafe(this.samples.offLower);
-              } catch (e) {}
-            }, 1200);
-          } catch (e) {
-            console.warn('Gagal memutar off_midhigh:', e);
-          }
-        } else {
-          // Lepas gas di kecepatan rendah: Langsung mainkan off_lower
-          try {
-            this.samples.offLower.currentTime = 0;
-            this.samples.offLower.volume = 0.85;
-            this.playTrackSafe(this.samples.offLower);
-          } catch (e) {
-            console.warn('Gagal memutar off_lower:', e);
-          }
-        }
-      }
-    }
+    // Biarkan sequence selesai alami; dipanggil hanya jika game di-cancel
+    this.stopSpinSequence();
   }
 
   playTrackSafe(track) {

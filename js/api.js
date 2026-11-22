@@ -1,27 +1,40 @@
 /**
  * ===================================================================================
- * KRATINGDAENG ENERGY METER - GOOGLE APPS SCRIPT API INTEGRATION
+ * KRATINGDAENG SPEEDOMETER SPIN WHEEL - GOOGLE APPS SCRIPT API INTEGRATION
  * ===================================================================================
- * Menghubungkan Game langsung ke Google Sheet & Google Drive via Apps Script Web App.
- * - Tanpa Google Cloud Console (Zero GCP setup)
- * - Fallback cerdas ke LocalStorage bila offline / URL belum diisi
+ * Menghubungkan Game ke Google Sheet & Google Drive via Apps Script Web App.
+ *
+ * PENGATURAN UNTUK ADMIN:
+ *   - URL Google Apps Script diisi di bawah (SCRIPT_URL), bukan di UI/frontend
+ *   - Lokasi Booth (RA atau Pelabuhan) diatur oleh backend via getBoothConfig()
+ *   - Fallback otomatis ke LocalStorage bila offline / URL belum diisi
+ *
+ * CARA DEPLOY:
+ *   1. Buka Google Apps Script: https://script.google.com
+ *   2. Paste isi google-apps-script/Code.gs
+ *   3. Deploy → Web App → Execute as: Me → Who has access: Anyone
+ *   4. Salin URL hasil deploy dan tempel di SCRIPT_URL di bawah ini
  * ===================================================================================
  */
 
-const API_STORAGE_KEY = 'KRATINGDAENG_APPS_SCRIPT_URL';
+// ==================================================================================
+// KONFIGURASI ADMIN — ISI URL DAN LOKASI BOOTH DI SINI, BUKAN DI FRONTEND
+// ==================================================================================
+const SCRIPT_URL = ''; // <-- Tempel URL Google Apps Script Anda di sini
+// Contoh: 'https://script.google.com/macros/s/AKfycb.../exec'
+
+// Lokasi booth aktif: 'RA' untuk Rest Area, 'Pelabuhan' untuk Pelabuhan
+// Jika backend mengembalikan konfigurasi, nilai ini akan ditimpa otomatis
+const DEFAULT_BOOTH_LOCATION = 'RA';
+// ==================================================================================
+
 const LOCAL_LEADERBOARD_KEY = 'KRATINGDAENG_LOCAL_SCORES';
 
 class ApiService {
   constructor() {
-    this.scriptUrl = localStorage.getItem(API_STORAGE_KEY) || '';
-  }
-
-  /**
-   * Simpan atau ubah URL Apps Script
-   */
-  setScriptUrl(url) {
-    this.scriptUrl = (url || '').trim();
-    localStorage.setItem(API_STORAGE_KEY, this.scriptUrl);
+    // URL dikonfigurasi di atas (SCRIPT_URL), bukan dari localStorage / input user
+    this.scriptUrl = SCRIPT_URL.trim();
+    this.boothLocation = DEFAULT_BOOTH_LOCATION;
   }
 
   getScriptUrl() {
@@ -29,21 +42,54 @@ class ApiService {
   }
 
   hasValidUrl() {
-    return Boolean(this.scriptUrl && this.scriptUrl.startsWith('https://script.google.com/macros/s/AKfycbwuKhWop7t4ydtYGsFgw0vTYEAQRIcQRsBUHT9B_xXwpFMOGu9e0Kixi3auoZaQjGow/exec'));
+    return Boolean(
+      this.scriptUrl &&
+      this.scriptUrl.startsWith('https://script.google.com/macros/s/AKfycbxzPTTcv2IT4-z3DEbq1WOws1mXE3iyXAMeuy-S7olKijKYyJuKiQHTPKgDXmulKR0W/exec')
+    );
   }
 
   /**
-   * Kirim skor ke Google Apps Script (Google Sheets & Google Drive)
+   * Ambil konfigurasi booth dari Google Apps Script backend.
+   * Backend menentukan lokasi (RA / Pelabuhan) — frontend tidak bisa memilih sendiri.
+   * Jika gagal, gunakan DEFAULT_BOOTH_LOCATION.
+   */
+  async getBoothConfig() {
+    if (!this.hasValidUrl()) {
+      return { location: this.boothLocation };
+    }
+
+    try {
+      const resp = await fetch(
+        `${this.scriptUrl}?action=getBoothConfig&t=${Date.now()}`,
+        { cache: 'no-store' }
+      );
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const data = await resp.json();
+
+      if (data && data.location) {
+        this.boothLocation = data.location; // simpan di memori
+        return { location: data.location };
+      }
+    } catch (e) {
+      console.warn('Gagal mengambil konfigurasi booth dari backend:', e);
+    }
+
+    return { location: this.boothLocation };
+  }
+
+  /**
+   * Kirim skor ke Google Apps Script (Google Sheets & Google Drive).
+   * Lokasi booth dikirim bersama data sehingga backend mengetahui konteks hadiah.
    */
   async submitScore(playerData) {
     // 1. Simpan selalu ke LocalStorage sebagai backup
     this.saveLocalScore(playerData);
 
-    // 2. Jika URL belum dipasang, kembalikan hasil lokal simulasi
+    // 2. Jika URL belum diisi admin, simpan lokal saja
     if (!this.hasValidUrl()) {
       return {
         status: 'local_only',
-        message: 'Disimpan di Browser Lokal (Masukkan URL Apps Script di Pengaturan untuk sync ke Google Sheet)',
+        message: 'Tersimpan di perangkat (Admin belum menghubungkan Google Sheet)',
         rank: this.calculateLocalRank(playerData.score),
         certificateUrl: '#'
       };
@@ -54,14 +100,12 @@ class ApiService {
       const response = await fetch(this.scriptUrl, {
         method: 'POST',
         headers: {
-          'Content-Type': 'text/plain;charset=utf-8' // Hindari CORS preflight OPTIONS block di Apps Script
+          'Content-Type': 'text/plain;charset=utf-8' // Hindari CORS preflight di Apps Script
         },
         body: JSON.stringify(playerData)
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP Error: ${response.status}`);
-      }
+      if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
 
       const result = await response.json();
       return result;
@@ -79,14 +123,14 @@ class ApiService {
         });
         return {
           status: 'success_nocors',
-          message: 'Terkirim ke Google Sheet (Mode Langsung)!',
+          message: 'Terkirim ke Google Sheet!',
           rank: this.calculateLocalRank(playerData.score),
           certificateUrl: '#'
         };
       } catch (innerErr) {
         return {
           status: 'offline',
-          message: 'Offline: Skor tersimpan di memori perangkat.',
+          message: 'Offline: Skor tersimpan di perangkat.',
           rank: this.calculateLocalRank(playerData.score),
           certificateUrl: '#'
         };
@@ -103,7 +147,10 @@ class ApiService {
     }
 
     try {
-      const response = await fetch(`${this.scriptUrl}?action=getLeaderboard&t=${Date.now()}`);
+      const response = await fetch(
+        `${this.scriptUrl}?action=getLeaderboard&t=${Date.now()}`,
+        { cache: 'no-store' }
+      );
       if (!response.ok) throw new Error('Network response was not ok');
       const data = await response.json();
 
@@ -118,23 +165,23 @@ class ApiService {
   }
 
   /**
-   * Tes Koneksi Google Apps Script
+   * Tes Koneksi Google Apps Script (dipanggil dari admin tool jika dibutuhkan)
    */
   async testConnection(testUrl) {
     const url = (testUrl || this.scriptUrl || '').trim();
     if (!url.startsWith('https://script.google.com/macros/s/')) {
-      return { success: false, message: 'Format URL tidak valid! Harus diawali: https://script.google.com/macros/s/...' };
+      return { ok: false, error: 'Format URL tidak valid.' };
     }
 
     try {
       const resp = await fetch(`${url}?test=1&t=${Date.now()}`);
       if (resp.ok) {
         const data = await resp.json();
-        return { success: true, message: 'Koneksi Berhasil! Terhubung ke Google Sheet.', data };
+        return { ok: true, message: 'Koneksi Berhasil!', data };
       }
-      return { success: false, message: `Server merespon dengan status: ${resp.status}` };
+      return { ok: false, error: `Server merespon status: ${resp.status}` };
     } catch (e) {
-      return { success: false, message: 'Gagal terhubung. Pastikan Apps Script di-deploy sebagai Web App dengan akses "Anyone" (Siapa saja).' };
+      return { ok: false, error: 'Gagal terhubung. Pastikan Apps Script di-deploy dengan akses "Anyone".' };
     }
   }
 
@@ -145,13 +192,11 @@ class ApiService {
       if (raw) return JSON.parse(raw);
     } catch (e) { }
 
-    // Default Highscore awal bertema Ketuk Ketupat Kratingdaeng
+    // Data contoh awal
     return [
-      { name: 'Sultan Ketupat Emas', score: 14800, tier: 'Tier 1: Terbelah 100%', peakRpm: 15.6 },
-      { name: 'Kratingdaeng Master', score: 12200, tier: 'Tier 2: Terbelah 70%', peakRpm: 13.1 },
-      { name: 'Pendekar Lebaran 99', score: 9600, tier: 'Tier 2: Terbelah 70%', peakRpm: 10.8 },
-      { name: 'Pejuang Stamina 07', score: 7800, tier: 'Tier 3: Terbelah 30%', peakRpm: 9.2 },
-      { name: 'Ketupat Cepat', score: 5400, tier: 'Tier 3: Terbelah 30%', peakRpm: 7.5 }
+      { name: 'Juara Speedometer', score: 178, tier: 'Tier 1 (10%): Kaos Eksklusif', peakRpm: 178 },
+      { name: 'Rider Biru', score: 142, tier: 'Tier 2 (30%): Payung Lipat', peakRpm: 142 },
+      { name: 'Pejuang Hijau', score: 88, tier: 'Tier 3 (60%): Shopping Bag', peakRpm: 88 }
     ];
   }
 
@@ -160,7 +205,7 @@ class ApiService {
     scores.push({
       name: playerData.name || 'Anonymous',
       score: playerData.score || 0,
-      tier: playerData.tier || 'Pejuang Stamina',
+      tier: playerData.tier || 'Tier 3',
       peakRpm: playerData.peakRpm || 0,
       timestamp: new Date().toISOString()
     });

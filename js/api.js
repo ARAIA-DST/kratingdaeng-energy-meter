@@ -20,8 +20,8 @@
 // ==================================================================================
 // KONFIGURASI ADMIN — ISI URL DAN LOKASI BOOTH DI SINI, BUKAN DI FRONTEND
 // ==================================================================================
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxzPTTcv2IT4-z3DEbq1WOws1mXE3iyXAMeuy-S7olKijKYyJuKiQHTPKgDXmulKR0W/exec'; // <-- Tempel URL Google Apps Script Anda di sini
-                       // Contoh: 'https://script.google.com/macros/s/AKfycb.../exec'
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyCPBWKgbcX2El_F33dLkq5FyLLuRLKRe7dFL7Yq3iQaqSh-xZ7UyWYUKfMte1997sE/exec'; // <-- Tempel URL Google Apps Script Anda di sini
+// Contoh: 'https://script.google.com/macros/s/AKfycb.../exec'
 
 // Lokasi booth aktif: 'RA' untuk Rest Area, 'Pelabuhan' untuk Pelabuhan
 // Jika backend mengembalikan konfigurasi, nilai ini akan ditimpa otomatis
@@ -118,7 +118,7 @@ class ApiService {
         await fetch(this.scriptUrl, {
           method: 'POST',
           mode: 'no-cors',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify(playerData)
         });
         return {
@@ -190,7 +190,7 @@ class ApiService {
     try {
       const raw = localStorage.getItem(LOCAL_LEADERBOARD_KEY);
       if (raw) return JSON.parse(raw);
-    } catch (e) {}
+    } catch (e) { }
 
     // Data contoh awal
     return [

@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Kratingdaeng Red Bull - Speedometer Spin Wheel 180°</title>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@1,800&family=Barlow:wght@600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
   <link rel="icon" href="assets/logo.png">
 </head>
@@ -22,15 +23,7 @@
       </div>
 
       <div class="top-actions">
-        <button id="btn-toggle-bgm" class="btn-icon" aria-label="Toggle Musik">
-          <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M9 18V5l12-2v13"></path>
-            <circle cx="6" cy="18" r="3"></circle>
-            <circle cx="18" cy="16" r="3"></circle>
-          </svg>
-          <span>MUSIK OFF</span>
-        </button>
-        <button id="btn-toggle-mute" class="btn-icon active" aria-label="Toggle Suara">
+                <button id="btn-toggle-mute" class="btn-icon active" aria-label="Suara dan musik">
           <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
             <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
@@ -49,7 +42,7 @@
       </div>
 
       <h1 class="main-title">SPEEDOMETER <span>SPIN WHEEL</span></h1>
-      <p class="sub-title">Satu Klik Untuk Memutar Speedometer & Menangkan Hadiah Eksklusif!</p>
+      <p class="sub-title">Tekan & Tahan Gas Untuk Memutar Speedometer & Menangkan Hadiah Eksklusif!</p>
 
       <!-- Panel Pengaturan Pemain & Booth -->
       <div class="card-panel">
@@ -104,7 +97,7 @@
               <span class="tier-ratio-tag">Pasti Dapat</span>
             </div>
             <div class="tier-items-list">
-              <span class="prize-chip green"></span>
+              <span class="prize-chip green">Shopping Bag Kratingdaeng</span>
             </div>
           </div>
         </div>
@@ -163,233 +156,19 @@
 
       <!-- Live Notification Banner -->
       <div id="overcharge-banner" class="overcharge-banner">
-        KLIK TOMBOL DI BAWAH UNTUK MEMUTAR SPEEDOMETER!
+        TEKAN &amp; TAHAN TOMBOL GAS SAMPAI PENUH!
       </div>
 
-      <!-- SPEEDOMETER SPIN WHEEL ARENA (180 DERAJAT) -->
-      <div class="speedometer-arena">
-        <div class="speedometer-box">
-          <!-- Glass Reflection Highlight Overlay -->
-          <div class="gauge-glass-glare"></div>
-
-          <!-- SVG Spin Wheel Speedometer 180 Derajat -->
-          <svg viewBox="0 0 420 250" class="speedometer-svg" id="speedometer-svg-elem">
-            <defs>
-              <!-- Gradient Sektor Tier 3 (0-108 KM/H, 60% Arc) -->
-              <linearGradient id="gradWedge3" x1="0%" y1="100%" x2="70%" y2="0%">
-                <stop offset="0%" stop-color="#022c22"/>
-                <stop offset="50%" stop-color="#047857"/>
-                <stop offset="100%" stop-color="#10b981"/>
-              </linearGradient>
-
-              <!-- Gradient Sektor Tier 2 (108-162 KM/H, 30% Arc) -->
-              <linearGradient id="gradWedge2" x1="0%" y1="0%" x2="100%" y2="80%">
-                <stop offset="0%" stop-color="#082f49"/>
-                <stop offset="50%" stop-color="#0284c7"/>
-                <stop offset="100%" stop-color="#38bdf8"/>
-              </linearGradient>
-
-              <!-- Gradient Sektor Tier 1 (162-180 KM/H, 10% Arc Redline) -->
-              <linearGradient id="gradWedge1" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stop-color="#450a0a"/>
-                <stop offset="40%" stop-color="#b91c1c"/>
-                <stop offset="80%" stop-color="#ff1744"/>
-                <stop offset="100%" stop-color="#ffd700"/>
-              </linearGradient>
-
-              <!-- Gradient Outer Chrome Bezel -->
-              <linearGradient id="gradChromeBezel" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stop-color="#64748b"/>
-                <stop offset="25%" stop-color="#f8fafc"/>
-                <stop offset="50%" stop-color="#334155"/>
-                <stop offset="75%" stop-color="#f8fafc"/>
-                <stop offset="100%" stop-color="#475569"/>
-              </linearGradient>
-
-              <!-- Gradient Golden Needle Blade -->
-              <linearGradient id="gradNeedleBlade" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stop-color="#ff1744"/>
-                <stop offset="50%" stop-color="#ff5252"/>
-                <stop offset="100%" stop-color="#ffd700"/>
-              </linearGradient>
-
-              <!-- Glow Filters -->
-              <filter id="goldGlow" x="-30%" y="-30%" width="160%" height="160%">
-                <feGaussianBlur stdDeviation="6" result="blur"/>
-                <feComposite in="SourceGraphic" in2="blur" operator="over"/>
-              </filter>
-              <filter id="pegShadow" x="-20%" y="-20%" width="140%" height="140%">
-                <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000" flood-opacity="0.8"/>
-              </filter>
-            </defs>
-
-            <!-- Outer Metallic Frame Shadow & Ring (180 Deg Arc) -->
-            <path d="M 25,215 A 185,185 0 0,1 395,215" fill="none" stroke="#030712" stroke-width="32" stroke-linecap="round"/>
-            <path d="M 28,215 A 182,182 0 0,1 392,215" fill="none" stroke="url(#gradChromeBezel)" stroke-width="24" stroke-linecap="round"/>
-            <path d="M 33,215 A 177,177 0 0,1 387,215" fill="none" stroke="#0f172a" stroke-width="14" stroke-linecap="round"/>
-
-            <!-- ==================== 3 SEKTOR SPIN WHEEL (WEDGE ARCS) ==================== -->
-            <!-- SEKTOR TIER 3 (0-108 KM/H, 60% WEDGE) -->
-            <path id="wedge-tier-3" class="spin-wedge wedge-t3" 
-                  d="M 40,215 A 170,170 0 0,1 262.5,53.3 L 246.5,100.8 A 120,120 0 0,0 90,215 Z" 
-                  fill="url(#gradWedge3)" stroke="#10b981" stroke-width="2"/>
-
-            <!-- SEKTOR TIER 2 (108-162 KM/H, 30% WEDGE) -->
-            <path id="wedge-tier-2" class="spin-wedge wedge-t2" 
-                  d="M 262.5,53.3 A 170,170 0 0,1 371.7,162.5 L 324.1,177.9 A 120,120 0 0,0 246.5,100.8 Z" 
-                  fill="url(#gradWedge2)" stroke="#38bdf8" stroke-width="2"/>
-
-            <!-- SEKTOR TIER 1 (162-180 KM/H, 10% WEDGE - REDLINE) -->
-            <path id="wedge-tier-1" class="spin-wedge wedge-t1" 
-                  d="M 371.7,162.5 A 170,170 0 0,1 380,215 L 330,215 A 120,120 0 0,0 324.1,177.9 Z" 
-                  fill="url(#gradWedge1)" stroke="#ffd700" stroke-width="2.5" filter="url(#goldGlow)"/>
-
-            <!-- SECTOR LABELS & PRIZE ICONS EMBEDDED IN WHEEL WEDGE -->
-            <g class="wheel-sector-labels">
-              <!-- Tier 3 Wedge Label (Shopping Bag) -->
-              <text x="148" y="145" class="wheel-wedge-text text-t3" transform="rotate(-42 148 145)">SHOPPING BAG (60%)</text>
-              <!-- Tier 2 Wedge Label (Payung / Jas / Tongkat) -->
-              <text x="295" y="132" class="wheel-wedge-text text-t2" transform="rotate(38 295 132)">TIER 2 (30%)</text>
-              <!-- Tier 1 Wedge Label (Kaos & Topi) -->
-              <text x="356" y="196" class="wheel-wedge-text text-t1" transform="rotate(76 356 196)">T1 (10%)</text>
-            </g>
-
-            <!-- CHROME SECTOR DIVIDERS (Batas Antar Sektor Spin Wheel) -->
-            <g id="sector-dividers-group">
-              <!-- Divider 0 km/h (-90°) -->
-              <line x1="38" y1="215" x2="92" y2="215" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
-              <!-- Divider 108 km/h (+18°) -->
-              <line x1="262.5" y1="53.3" x2="246.5" y2="100.8" stroke="#fff" stroke-width="3.5" stroke-linecap="round" filter="url(#goldGlow)"/>
-              <!-- Divider 162 km/h (+72°) -->
-              <line x1="371.7" y1="162.5" x2="324.1" y2="177.9" stroke="#ffd700" stroke-width="3.5" stroke-linecap="round" filter="url(#goldGlow)"/>
-              <!-- Divider 180 km/h (+90°) -->
-              <line x1="382" y1="215" x2="328" y2="215" stroke="#ff1744" stroke-width="3" stroke-linecap="round"/>
-            </g>
-
-            <!-- CHROME PEGS / WHEEL PINS (Pin Pembatas Layaknya Roda Putar Keberuntungan) -->
-            <g id="spin-wheel-pegs">
-              <!-- Pegs along outer arc radius 180 -->
-              <circle cx="30" cy="215" r="4" fill="#f8fafc" stroke="#475569" stroke-width="1.5" filter="url(#pegShadow)"/>
-              <circle cx="44" cy="168" r="3.5" fill="#f8fafc" stroke="#475569" stroke-width="1.5" filter="url(#pegShadow)"/>
-              <circle cx="70" cy="126" r="3.5" fill="#f8fafc" stroke="#475569" stroke-width="1.5" filter="url(#pegShadow)"/>
-              <circle cx="108" cy="91" r="3.5" fill="#f8fafc" stroke="#475569" stroke-width="1.5" filter="url(#pegShadow)"/>
-              <circle cx="156" cy="67" r="3.5" fill="#f8fafc" stroke="#475569" stroke-width="1.5" filter="url(#pegShadow)"/>
-              <circle cx="210" cy="58" r="4.5" fill="#ffd700" stroke="#b45309" stroke-width="1.5" filter="url(#pegShadow)"/>
-              <circle cx="264" cy="67" r="3.5" fill="#f8fafc" stroke="#475569" stroke-width="1.5" filter="url(#pegShadow)"/>
-              <circle cx="312" cy="91" r="3.5" fill="#f8fafc" stroke="#475569" stroke-width="1.5" filter="url(#pegShadow)"/>
-              <circle cx="350" cy="126" r="3.5" fill="#f8fafc" stroke="#475569" stroke-width="1.5" filter="url(#pegShadow)"/>
-              <circle cx="376" cy="168" r="3.5" fill="#ff1744" stroke="#7f1d1d" stroke-width="1.5" filter="url(#pegShadow)"/>
-              <circle cx="390" cy="215" r="4.5" fill="#ffd700" stroke="#b45309" stroke-width="1.5" filter="url(#pegShadow)"/>
-            </g>
-
-            <!-- SPEEDOMETER RADIAL TICKS & LUMINESCENT NUMBERS -->
-            <g id="speed-ticks-group">
-              <!-- 0 KM/H -->
-              <line x1="42" y1="215" x2="56" y2="215" stroke="#fff" stroke-width="3"/>
-              <text x="68" y="219" class="speed-tick-num">0</text>
-
-              <!-- 20 KM/H -->
-              <line x1="53" y1="171" x2="66" y2="176" stroke="#fff" stroke-width="2"/>
-              <text x="78" y="181" class="speed-tick-num">20</text>
-
-              <!-- 40 KM/H -->
-              <line x1="77" y1="132" x2="88" y2="140" stroke="#fff" stroke-width="2"/>
-              <text x="98" y="148" class="speed-tick-num">40</text>
-
-              <!-- 60 KM/H -->
-              <line x1="113" y1="100" x2="122" y2="111" stroke="#fff" stroke-width="2"/>
-              <text x="130" y="122" class="speed-tick-num">60</text>
-
-              <!-- 80 KM/H -->
-              <line x1="158" y1="80" x2="163" y2="93" stroke="#fff" stroke-width="2.5"/>
-              <text x="166" y="108" class="speed-tick-num">80</text>
-
-              <!-- 100 KM/H -->
-              <line x1="207" y1="78" x2="204" y2="92" stroke="#fff" stroke-width="2.5"/>
-              <text x="200" y="107" class="speed-tick-num">100</text>
-
-              <!-- 120 KM/H -->
-              <line x1="255" y1="92" x2="247" y2="104" stroke="#fff" stroke-width="2.5"/>
-              <text x="240" y="122" class="speed-tick-num">120</text>
-
-              <!-- 140 KM/H -->
-              <line x1="295" y1="121" x2="284" y2="131" stroke="#fff" stroke-width="2.5"/>
-              <text x="272" y="146" class="speed-tick-num">140</text>
-
-              <!-- 160 KM/H (Redline Threshold) -->
-              <line x1="322" y1="160" x2="308" y2="166" stroke="#ff3344" stroke-width="3"/>
-              <text x="294" y="176" class="speed-tick-num redline">160</text>
-
-              <!-- 180 KM/H (Max Redline) -->
-              <line x1="335" y1="215" x2="320" y2="215" stroke="#ff1744" stroke-width="3.5"/>
-              <text x="303" y="219" class="speed-tick-num redline">180</text>
-            </g>
-
-            <!-- ==================== JARUM SPEEDOMETER SUPERCAR 3D ==================== -->
-            <!-- Pivot di (210, 215). Menghadap -90 deg (0 km/h, ke kiri) saat awal -->
-            <g id="speedometer-needle-group" style="transform-origin: 210px 215px; transform: rotate(-90deg);">
-              <!-- Bayangan Jarum -->
-              <polygon points="206,218 214,218 211,46 209,46" fill="rgba(0,0,0,0.6)" filter="blur(3px)"/>
-              <!-- Counterweight Ekor Belakang -->
-              <polygon points="207,215 213,215 212,235 208,235" fill="#334155" stroke="#64748b" stroke-width="1"/>
-              <!-- Bilah Jarum Utama 3D -->
-              <polygon points="206.5,215 213.5,215 211.5,44 208.5,44" fill="url(#gradNeedleBlade)"/>
-              <!-- Garis Refleksi Tengah Bilah -->
-              <line x1="210" y1="215" x2="210" y2="44" stroke="#ffffff" stroke-width="1.2" opacity="0.8"/>
-              <!-- Ujung Jarum Menyala (Luminescent Arrowhead Pointer) -->
-              <polygon points="207,52 213,52 210,32" fill="#ffd700" filter="url(#goldGlow)"/>
-            </g>
-
-            <!-- ==================== PUSAT HUB PIVOT LUXURY ==================== -->
-            <!-- Concentric Bezel Rings -->
-            <circle cx="210" cy="215" r="34" fill="#0b1736" stroke="#64748b" stroke-width="2"/>
-            <circle cx="210" cy="215" r="28" fill="#020617" stroke="#ffd700" stroke-width="3" filter="url(#goldGlow)"/>
-            <circle cx="210" cy="215" r="23" fill="#070e20" stroke="rgba(255,255,255,0.2)" stroke-width="1.5"/>
-            <!-- Logo Banteng Kratingdaeng di Titik Pivot -->
-            <image href="assets/logo.png" x="190" y="200" width="40" height="30" preserveAspectRatio="xMidYMid meet"/>
-          </svg>
-
-          <!-- DASHBOARD INSTRUMENT CLUSTER (Speed & Odometer Readout) -->
-          <div class="dashboard-readout-panel">
-            <!-- Digital Speedometer -->
-            <div class="digital-speed-wrap">
-              <span id="speed-digital-val" class="speed-digital-number">0</span>
-              <span class="speed-digital-unit">KM/H</span>
-            </div>
-
-            <!-- ODOMETER (Rolling Digital Mileage Display) -->
-            <div class="odometer-container">
-              <span class="odometer-label">ODOMETER DIGITAL</span>
-              <div class="odometer-rolling-box">
-                <span class="odo-digit" id="odo-d1">0</span>
-                <span class="odo-digit" id="odo-d2">0</span>
-                <span class="odo-digit" id="odo-d3">1</span>
-                <span class="odo-digit" id="odo-d4">8</span>
-                <span class="odo-digit" id="odo-d5">4</span>
-                <span class="odo-unit-tag">KM</span>
-              </div>
-            </div>
-
-            <!-- Live Target Zone Status Badge -->
-            <div id="live-zone-status" class="zone-status-badge zone-idle">
-              ZONA: SIAP PUTAR
-            </div>
-          </div>
-        </div>
+      <!-- SPEEDOMETER BARU (RPM / FUEL GAUGE) - dirender oleh js/gauge.js -->
+      <div class="gauge-box">
+        <svg id="gauge-svg" class="gauge-svg" viewBox="0 0 600 500" role="img" aria-label="Speedometer RPM dan fuel gauge"></svg>
       </div>
 
-      <!-- ==================== TOMBOL SINGLE-CLICK SPIN WHEEL ==================== -->
+      <!-- SATU TOMBOL UTAMA: TEKAN & TAHAN (juga bisa tombol Spasi / Enter) -->
       <div class="spin-trigger-area">
-        <button id="btn-spin-wheel" class="btn-spin-wheel" aria-label="Putar Speedometer Spin Wheel">
-          <div class="btn-spin-glow-ring"></div>
-          <div class="btn-spin-content">
-            <svg class="spin-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="10"></circle>
-              <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
-            </svg>
-            <span class="btn-spin-title" id="btn-spin-text">PUTAR SPEEDOMETER</span>
-            <span class="btn-spin-sub" id="btn-spin-subtext">KLIK SATU KALI UNTUK MEMUTAR</span>
-          </div>
+        <button id="btn-spin-wheel" class="btn-gas" type="button" aria-label="Tekan dan tahan untuk gas pol">
+          <span class="btn-spin-title" id="btn-spin-text">PRESS &amp; HOLD:</span>
+          <span class="btn-spin-sub" id="btn-spin-subtext">GAS POL / REFUEL</span>
         </button>
       </div>
     </section>
@@ -506,6 +285,7 @@
   <script src="js/audio.js"></script>
   <script src="js/particles.js"></script>
   <script src="js/api.js"></script>
+  <script src="js/gauge.js"></script>
   <script src="js/game.js"></script>
 </body>
 </html>

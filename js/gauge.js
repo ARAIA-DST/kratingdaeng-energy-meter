@@ -22,14 +22,15 @@ class SpeedGauge {
  <radialGradient id="gFace" cx=".5" cy=".55" r=".6"><stop offset="0" stop-color="#0b2a42"/><stop offset=".7" stop-color="#050b12"/><stop offset="1" stop-color="#000"/></radialGradient>
  <linearGradient id="gSb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2d7cc4"/><stop offset="1" stop-color="#16497d"/></linearGradient>
  <linearGradient id="gSg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd24a"/><stop offset="1" stop-color="#d89a00"/></linearGradient>
+ <clipPath id="gClip"><circle cx="0" cy="-12" r="24"/></clipPath>
  <filter id="gGlow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
 <circle cx="300" cy="300" r="296" fill="url(#gCh)"/><circle cx="300" cy="300" r="282" fill="#14181d"/>
-<image href="" x="20" y="12" width="92" height="40" preserveAspectRatio="xMinYMid meet"/>`;
+<image href="assets/logo.png" x="20" y="12" width="92" height="40" preserveAspectRatio="xMinYMid meet"/>`;
     this.items.forEach((p, i) => {
       const a0 = -130 + i * W + 1, a1 = -130 + (i + 1) * W - 1, ro = 276, ri = 196;
       const o0 = P(ro, a0), o1 = P(ro, a1), i1 = P(ri, a1), i0 = P(ri, a0), m = (a0 + a1) / 2, q = P(236, m);
       h += `<path class="g-sec" d="M${o0[0]} ${o0[1]}A${ro} ${ro} 0 0 1 ${o1[0]} ${o1[1]}L${i1[0]} ${i1[1]}A${ri} ${ri} 0 0 0 ${i0[0]} ${i0[1]}Z" fill="url(#gSb)" stroke="#0a2744" stroke-width="2"/>
-<g transform="translate(${q[0]} ${q[1]}) rotate(${m * .75})"><text class="g-ico" id="g-ico-${i}" y="-8">${p.i}</text><text class="g-lbl" id="g-lbl-${i}" y="20">${p.n}</text></g>`;
+<g transform="translate(${q[0]} ${q[1]}) rotate(${m * .75})"><text class="g-ico" id="g-ico-${i}" y="-8">${p.i}</text><image class="g-img" id="g-img-${i}" x="-24" y="-36" width="48" height="48" preserveAspectRatio="xMidYMid slice" clip-path="url(#gClip)" style="display:none"/><text class="g-lbl" id="g-lbl-${i}" y="22">${p.n}</text></g>`;
     });
     h += `<circle cx="300" cy="300" r="186" fill="url(#gCh)"/><circle cx="300" cy="300" r="176" fill="#05090e"/><circle cx="300" cy="300" r="168" fill="url(#gFace)"/>`;
     for (let k = 0; k <= 20; k++) {
@@ -62,13 +63,34 @@ class SpeedGauge {
   clear() { this.highlight(-1); }
   setLocation(loc) {
     const pel = loc === 'Pelabuhan';
-    document.getElementById('g-ico-6').textContent = pel ? '🎒' : '🔦';
-    document.getElementById('g-lbl-6').textContent = pel ? 'Cover Tas' : 'Tongkat Tol';
+    this.items[6] = pel ? { k: 'bagcover', n: 'Cover Tas', i: '🎒' } : { k: 'tolstick', n: 'Tongkat Tol', i: '🔦' };
+    this.applyPrizes();
   }
   indexForPrize(type) {
-    const key = type === 'bagcover' ? 'tolstick' : type;
-    const c = this.items.map((p, i) => p.k === key ? i : -1).filter(i => i >= 0);
-    return c[Math.floor(Math.random() * c.length)];
+    const c = this.items.map((p, i) => p.k === type ? i : -1).filter(i => i >= 0);
+    return c.length ? c[Math.floor(Math.random() * c.length)] : 0;
+  }
+  /** list: [{key,label,image}] dari Google Sheet (gambar JPG dari Drive). Mengembalikan peta key->url yang berhasil dimuat. */
+  setPrizes(list) {
+    this.prizeData = {}; (list || []).forEach(p => { if (p && p.key) this.prizeData[p.key] = p; });
+    this.loaded = this.loaded || {};
+    const jobs = Object.values(this.prizeData).filter(p => p.image && this.loaded[p.key] !== p.image).map(p => new Promise(res => {
+      const im = new Image();
+      im.onload = () => { this.loaded[p.key] = p.image; res(); };
+      im.onerror = () => res();
+      im.src = p.image;
+    }));
+    return Promise.all(jobs).then(() => { this.applyPrizes(); return Object.assign({}, this.loaded); });
+  }
+  applyPrizes() {
+    this.items.forEach((it, i) => {
+      const d = (this.prizeData || {})[it.k] || {}, url = (this.loaded || {})[it.k];
+      const ico = document.getElementById('g-ico-' + i), img = document.getElementById('g-img-' + i), lb = document.getElementById('g-lbl-' + i);
+      if (!ico) return;
+      lb.textContent = d.label || it.n;
+      if (url && d.image === url) { img.setAttribute('href', url); img.style.display = ''; ico.style.display = 'none'; }
+      else { img.style.display = 'none'; ico.style.display = ''; ico.textContent = it.i; }
+    });
   }
 }
 window.gauge = new SpeedGauge(document.getElementById('gauge-svg'));
